@@ -1659,7 +1659,7 @@ func TestJsonInt64ReadsEveryShapeAJsonNumberTakes(t *testing.T) {
 		// is the zero-quota rule that catches this one and not the negative-quota
 		// rule. Both refuse a limited reseller; only the pair covers the range.
 		{"a negative fraction truncates to zero", float64(-0.5), 0},
-		{"an int64", int64(10 * gb), 10 * gb},
+		{"an int64", 10 * gb, 10 * gb},
 		{"an int", int(10 * gb), 10 * gb},
 		{"a json.Number", json.Number("10737418240"), 10 * gb},
 		{"a negative json.Number", json.Number("-10737418240"), -10 * gb},

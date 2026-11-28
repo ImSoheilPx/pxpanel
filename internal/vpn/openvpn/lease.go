@@ -721,7 +721,7 @@ func ovpnSpawnEvict(inboundId int, proto, ip, raddr string) {
 	if err != nil {
 		return
 	}
-	cmd := exec.Command(exe, "openvpn-evict", strconv.Itoa(inboundId), proto, ip, raddr)
+	cmd := exec.CommandContext(context.Background(), exe, "openvpn-evict", strconv.Itoa(inboundId), proto, ip, raddr)
 	cmd.SysProcAttr = &syscall.SysProcAttr{Setsid: true} // survive the hook exiting
 	_ = cmd.Start()                                      // no Wait: detached
 }

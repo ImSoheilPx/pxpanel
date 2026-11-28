@@ -56,6 +56,7 @@
 package sstp
 
 import (
+	"context"
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/rand"
@@ -472,15 +473,15 @@ func (s *SstpService) buildServerConfig(inbound *model.Inbound, settings *sstpSe
 	b.WriteString("thread-count=4\n\n")
 
 	b.WriteString("[log]\n")
-	b.WriteString(fmt.Sprintf("log-file=%s/accel.log\n", dir))
+	fmt.Fprintf(&b, "log-file=%s/accel.log\n", dir)
 	b.WriteString("level=3\n\n")
 
 	// accept=ssl: terminate MS-SSTP over HTTPS natively (not behind an SSL proxy).
 	b.WriteString("[sstp]\n")
 	b.WriteString("verbose=1\n")
 	b.WriteString("accept=ssl\n")
-	b.WriteString(fmt.Sprintf("ssl-pemfile=%s\n", certPath))
-	b.WriteString(fmt.Sprintf("ssl-keyfile=%s\n", keyPath))
+	fmt.Fprintf(&b, "ssl-pemfile=%s\n", certPath)
+	fmt.Fprintf(&b, "ssl-keyfile=%s\n", keyPath)
 	// Widen TLS for maximum device coverage: accept TLS 1.0 through 1.3 and drop the
 	// OpenSSL security level to 1 so legacy Windows SSTP clients (Vista / 7, which
 	// negotiate TLS 1.0 with AES-CBC-SHA ciphers) can still connect alongside modern
@@ -489,14 +490,14 @@ func (s *SstpService) buildServerConfig(inbound *model.Inbound, settings *sstpSe
 	// cert — see deploy.sh). Token spellings verified against the bundled libsstp.so.
 	b.WriteString("ssl-protocol=tls1,tls1.1,tls1.2,tls1.3\n")
 	b.WriteString("ssl-ciphers=DEFAULT@SECLEVEL=1\n")
-	b.WriteString(fmt.Sprintf("port=%d\n", port))
-	b.WriteString(fmt.Sprintf("ppp-max-mtu=%d\n\n", mtu))
+	fmt.Fprintf(&b, "port=%d\n", port)
+	fmt.Fprintf(&b, "ppp-max-mtu=%d\n\n", mtu)
 
 	// mppe=deny: SSTP already runs inside TLS, so link-layer MPPE is redundant.
 	b.WriteString("[ppp]\n")
 	b.WriteString("verbose=1\n")
-	b.WriteString(fmt.Sprintf("mtu=%d\n", mtu))
-	b.WriteString(fmt.Sprintf("mru=%d\n", mtu))
+	fmt.Fprintf(&b, "mtu=%d\n", mtu)
+	fmt.Fprintf(&b, "mru=%d\n", mtu)
 	b.WriteString("mppe=deny\n")
 	b.WriteString("ipv4=require\n")
 	b.WriteString("lcp-echo-interval=30\n")
@@ -507,9 +508,9 @@ func (s *SstpService) buildServerConfig(inbound *model.Inbound, settings *sstpSe
 	// the default route → domain lookups fail while direct-IP connections still work
 	// (the exact "connect but no internet for anything with a hostname" symptom).
 	b.WriteString("[dns]\n")
-	b.WriteString(fmt.Sprintf("dns1=%s\n", dns1))
+	fmt.Fprintf(&b, "dns1=%s\n", dns1)
 	if dns2 != "" {
-		b.WriteString(fmt.Sprintf("dns2=%s\n", dns2))
+		fmt.Fprintf(&b, "dns2=%s\n", dns2)
 	}
 	b.WriteString("\n")
 
@@ -528,16 +529,16 @@ func (s *SstpService) buildServerConfig(inbound *model.Inbound, settings *sstpSe
 	// IP is the RADIUS Framed-IP-Address.
 	b.WriteString("[radius]\n")
 	b.WriteString("verbose=1\n")
-	b.WriteString(fmt.Sprintf("dictionary=%s\n", accelDictPath))
-	b.WriteString(fmt.Sprintf("nas-identifier=sstp-%d\n", id))
+	fmt.Fprintf(&b, "dictionary=%s\n", accelDictPath)
+	fmt.Fprintf(&b, "nas-identifier=sstp-%d\n", id)
 	b.WriteString("nas-ip-address=127.0.0.1\n")
-	b.WriteString(fmt.Sprintf("gw-ip-address=%s\n", gwIP))
-	b.WriteString(fmt.Sprintf("server=127.0.0.1,%s,auth-port=1812,acct-port=1813,req-limit=0\n", secret))
+	fmt.Fprintf(&b, "gw-ip-address=%s\n", gwIP)
+	fmt.Fprintf(&b, "server=127.0.0.1,%s,auth-port=1812,acct-port=1813,req-limit=0\n", secret)
 	b.WriteString("acct-interim-interval=60\n\n")
 
 	// Loopback TCP control interface for accel-cmd (session eviction / disable).
 	b.WriteString("[cli]\n")
-	b.WriteString(fmt.Sprintf("tcp=127.0.0.1:%d\n", sstpCliPort(inbound)))
+	fmt.Fprintf(&b, "tcp=127.0.0.1:%d\n", sstpCliPort(inbound))
 
 	return b.String()
 }
@@ -817,7 +818,7 @@ func sstpInboundForIP(ip string) *model.Inbound {
 // OpenConnect wave owns that service here, and the detector is identical to
 // Ikev2Service.getServerIP, so it is duplicated locally instead of imported.
 func serverIP() string {
-	output, err := exec.Command("ip", "-4", "route", "get", "1.1.1.1").Output()
+	output, err := exec.CommandContext(context.Background(), "ip", "-4", "route", "get", "1.1.1.1").Output()
 	if err == nil {
 		parts := strings.Fields(string(output))
 		for i, p := range parts {
@@ -901,7 +902,7 @@ func (s *SstpService) writeFileMode(path, content string, mode os.FileMode) erro
 }
 
 func (s *SstpService) runCmd(name string, args ...string) error {
-	cmd := exec.Command(name, args...)
+	cmd := exec.CommandContext(context.Background(), name, args...)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		log.Debugf("SSTP: cmd '%s %s' failed: %s %v", name, strings.Join(args, " "), string(output), err)

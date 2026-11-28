@@ -918,7 +918,7 @@ func (s *MtprotoService) buildServerConfig(inbound *model.Inbound, settings *mtp
 	// Middle-proxy mode carries the ad tag and pins egress to a direct path. It is a
 	// PROCESS switch, so it is on as soon as ONE account holds a tag: there is no way
 	// to tag that account and keep routing the rest.
-	b.WriteString(fmt.Sprintf("use_middle_proxy = %t\n", adtag))
+	fmt.Fprintf(&b, "use_middle_proxy = %t\n", adtag)
 	// Fail loudly rather than silently serving an untagged proxy if a middle-proxy
 	// handshake is ever attempted over a SOCKS route whose BND tuple is unusable.
 	b.WriteString("me_socks_kdf_policy = \"strict\"\n")
@@ -933,13 +933,13 @@ func (s *MtprotoService) buildServerConfig(inbound *model.Inbound, settings *mtp
 	// is not enough, because our telemt patch reads a MISSING per-account entry as
 	// "no restriction", so an account would keep whatever mode the listener allows.
 	b.WriteString("[general.modes]\n")
-	b.WriteString(fmt.Sprintf("classic = %t\n", settings.ModeClassic))
-	b.WriteString(fmt.Sprintf("secure = %t\n", settings.ModeSecure))
-	b.WriteString(fmt.Sprintf("tls = %t\n\n", settings.ModeTls))
+	fmt.Fprintf(&b, "classic = %t\n", settings.ModeClassic)
+	fmt.Fprintf(&b, "secure = %t\n", settings.ModeSecure)
+	fmt.Fprintf(&b, "tls = %t\n\n", settings.ModeTls)
 
 	b.WriteString("[server]\n")
-	b.WriteString(fmt.Sprintf("port = %d\n", inbound.Port))
-	b.WriteString(fmt.Sprintf("metrics_listen = \"127.0.0.1:%d\"\n", mtprotoMetricsPort(inbound)))
+	fmt.Fprintf(&b, "port = %d\n", inbound.Port)
+	fmt.Fprintf(&b, "metrics_listen = \"127.0.0.1:%d\"\n", mtprotoMetricsPort(inbound))
 	b.WriteString("metrics_whitelist = [\"127.0.0.1/32\"]\n\n")
 
 	// The panel is the source of truth for accounts, so telemt's own control API
@@ -953,7 +953,7 @@ func (s *MtprotoService) buildServerConfig(inbound *model.Inbound, settings *mtp
 	// accept an unknown SNI and let the handshake HMAC (which is what actually
 	// proves secret possession) decide. Without this, only clients dialing with the
 	// domain below could connect.
-	b.WriteString(fmt.Sprintf("tls_domain = %q\n", tomlEscape(s.tlsDomain(settings))))
+	fmt.Fprintf(&b, "tls_domain = %q\n", tomlEscape(s.tlsDomain(settings)))
 	b.WriteString("unknown_sni_action = \"accept\"\n")
 	b.WriteString("mask = true\n")
 	b.WriteString("tls_emulation = true\n\n")
@@ -963,7 +963,7 @@ func (s *MtprotoService) buildServerConfig(inbound *model.Inbound, settings *mtp
 		b.WriteString("# so operator routing rules apply to this inbound.\n")
 		b.WriteString("[[upstreams]]\n")
 		b.WriteString("type = \"socks5\"\n")
-		b.WriteString(fmt.Sprintf("address = \"127.0.0.1:%d\"\n", s.GetSocksPort(inbound)))
+		fmt.Fprintf(&b, "address = \"127.0.0.1:%d\"\n", s.GetSocksPort(inbound))
 		// Present each account as the socks username so Xray can route per client.
 		// Nothing account-specific may appear in this section: [[upstreams]] is
 		// restart-only, so listing accounts here would drop every live connection on
@@ -971,8 +971,8 @@ func (s *MtprotoService) buildServerConfig(inbound *model.Inbound, settings *mtp
 		b.WriteString("socks_user_from_account = true\n")
 		// Fallback identity for telemt's own connections that have no account (the
 		// startup DC-reachability probes). Not a secret: see GetSocksConfig.
-		b.WriteString(fmt.Sprintf("username = %q\n", mtprotoSystemAccount))
-		b.WriteString(fmt.Sprintf("password = %q\n\n", mtprotoSystemAccount))
+		fmt.Fprintf(&b, "username = %q\n", mtprotoSystemAccount)
+		fmt.Fprintf(&b, "password = %q\n\n", mtprotoSystemAccount)
 	} else {
 		b.WriteString("# adtag is on: middle-proxy mode requires a direct egress whose TCP\n")
 		b.WriteString("# 4-tuple reaches Telegram unchanged, so no upstream is configured.\n")
@@ -987,7 +987,7 @@ func (s *MtprotoService) buildServerConfig(inbound *model.Inbound, settings *mtp
 	// string keys the secret, the counters, the routing account and client_traffics.
 	b.WriteString("[access.users]\n")
 	for _, c := range clients {
-		b.WriteString(fmt.Sprintf("%q = %q\n", tomlEscape(c.Email), tomlEscape(c.Secret)))
+		fmt.Fprintf(&b, "%q = %q\n", tomlEscape(c.Email), tomlEscape(tag))
 	}
 	b.WriteString("\n")
 
@@ -996,7 +996,7 @@ func (s *MtprotoService) buildServerConfig(inbound *model.Inbound, settings *mtp
 	b.WriteString("[access.user_enabled]\n")
 	for _, c := range clients {
 		on := c.Enable && !disabled[c.Email]
-		b.WriteString(fmt.Sprintf("%q = %t\n", tomlEscape(c.Email), on))
+		fmt.Fprintf(&b, "%q = %t\n", tomlEscape(c.Email), on)
 	}
 	b.WriteString("\n")
 
@@ -1013,8 +1013,8 @@ func (s *MtprotoService) buildServerConfig(inbound *model.Inbound, settings *mtp
 	deviceCap := vpnrange.EffectiveUserLimit(settings.UserLimit)
 	b.WriteString("[access.user_max_unique_ips]\n")
 	for _, c := range clients {
-		b.WriteString(fmt.Sprintf("%q = %d\n", tomlEscape(c.Email),
-			vpnrange.ResolveUserLimitOverride(deviceCap, c.UserLimitOverride)))
+		fmt.Fprintf(&b, "%q = %d\n", tomlEscape(c.Email),
+			vpnrange.ResolveUserLimitOverride(deviceCap, c.UserLimitOverride))
 	}
 	b.WriteString("\n")
 
@@ -1025,7 +1025,7 @@ func (s *MtprotoService) buildServerConfig(inbound *model.Inbound, settings *mtp
 	modes := strings.Join(settings.modes(), ",")
 	b.WriteString("[access.user_modes]\n")
 	for _, c := range clients {
-		b.WriteString(fmt.Sprintf("%q = %q\n", tomlEscape(c.Email), modes))
+		fmt.Fprintf(&b, "%q = %q\n", tomlEscape(c.Email), modes)
 	}
 	b.WriteString("\n")
 
@@ -1044,7 +1044,7 @@ func (s *MtprotoService) buildServerConfig(inbound *model.Inbound, settings *mtp
 			if !c.AdtagEnable || tag == "" {
 				continue
 			}
-			b.WriteString(fmt.Sprintf("%q = %q\n", tomlEscape(c.Email), tomlEscape(tag)))
+			fmt.Fprintf(&b, "%q = %q\n", tomlEscape(c.Email), tomlEscape(tag))
 		}
 		b.WriteString("\n")
 	}

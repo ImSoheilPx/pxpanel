@@ -10,6 +10,7 @@ package vpnout
 // as one family.
 
 import (
+	"errors"
 	"fmt"
 	"net"
 	"os/exec"
@@ -150,7 +151,7 @@ func errIsExist(err error) bool {
 	if err == nil {
 		return false
 	}
-	if err == unix.EEXIST || err == unix.EADDRINUSE {
+	if errors.Is(err, unix.EEXIST) || errors.Is(err, unix.EADDRINUSE) {
 		return true
 	}
 	s := strings.ToLower(err.Error())

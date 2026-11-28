@@ -33,6 +33,7 @@
 package ikev2
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -247,14 +248,14 @@ func buildCharonConf() (string, error) {
 	b.WriteString("        }\n")
 	b.WriteString("    }\n")
 	b.WriteString("    plugins {\n")
-	b.WriteString(fmt.Sprintf("        include %s/charon/*.conf\n", strongswanDefaultConfDir()))
+	fmt.Fprintf(&b, "        include %s/charon/*.conf\n", strongswanDefaultConfDir())
 	b.WriteString("        eap-radius {\n")
 	b.WriteString("            accounting = yes\n")
 	b.WriteString("            accounting_interval = 300\n")
 	b.WriteString("            servers {\n")
 	b.WriteString("                pxpanel {\n")
 	b.WriteString("                    address = 127.0.0.1\n")
-	b.WriteString(fmt.Sprintf("                    secret = %s\n", radiusSecret))
+	fmt.Fprintf(&b, "                    secret = %s\n", radiusSecret)
 	b.WriteString("                    auth_port = 1812\n")
 	b.WriteString("                    acct_port = 1813\n")
 	b.WriteString("                    nas_identifier = ikev2\n")
@@ -262,7 +263,7 @@ func buildCharonConf() (string, error) {
 	b.WriteString("            }\n")
 	b.WriteString("        }\n")
 	b.WriteString("        attr {\n")
-	b.WriteString(fmt.Sprintf("            dns = %s, %s\n", dns1, dns2))
+	fmt.Fprintf(&b, "            dns = %s, %s\n", dns1, dns2)
 	b.WriteString("        }\n")
 	b.WriteString("    }\n")
 	b.WriteString("}\n")
@@ -325,7 +326,7 @@ func reloadCharon() error {
 	var out []byte
 	var err error
 	for attempt := 0; attempt < 6; attempt++ {
-		out, err = exec.Command(swanctlBin(), "--load-all").CombinedOutput()
+		out, err = exec.CommandContext(context.Background(), swanctlBin(), "--load-all").CombinedOutput()
 		if err == nil {
 			return nil
 		}

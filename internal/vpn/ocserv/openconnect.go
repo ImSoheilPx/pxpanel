@@ -355,26 +355,26 @@ func (s *OcservService) buildServerConfig(inbound *model.Inbound, settings *ocse
 	// disconnect-by-IP) can't find the session, plus source-IP routing for the
 	// device breaks. (The "401" that once prompted disabling this was an empty
 	// RADIUS shared secret, not groupconfig.)
-	b.WriteString(fmt.Sprintf("auth = \"radius[config=%s/radiusclient.conf,groupconfig=true]\"\n", dir))
-	b.WriteString(fmt.Sprintf("acct = \"radius[config=%s/radiusclient.conf]\"\n", dir))
-	b.WriteString(fmt.Sprintf("tcp-port = %d\n", port))
-	b.WriteString(fmt.Sprintf("udp-port = %d\n", port))
-	b.WriteString(fmt.Sprintf("socket-file = /var/run/ocserv/ocserv-%d.sock\n", id))
+	fmt.Fprintf(&b, "auth = \"radius[config=%s/radiusclient.conf,groupconfig=true]\"\n", dir)
+	fmt.Fprintf(&b, "acct = \"radius[config=%s/radiusclient.conf]\"\n", dir)
+	fmt.Fprintf(&b, "tcp-port = %d\n", port)
+	fmt.Fprintf(&b, "udp-port = %d\n", port)
+	fmt.Fprintf(&b, "socket-file = /var/run/ocserv/ocserv-%d.sock\n", id)
 	// occtl control socket — used for programmatic session control (User Limit
 	// eviction via `occtl -s <sock> disconnect`).
 	b.WriteString("use-occtl = true\n")
-	b.WriteString(fmt.Sprintf("occtl-socket-file = %s\n", s.occtlSocket(id)))
+	fmt.Fprintf(&b, "occtl-socket-file = %s\n", s.occtlSocket(id))
 	b.WriteString("run-as-user = root\n")
 	b.WriteString("run-as-group = root\n")
-	b.WriteString(fmt.Sprintf("server-cert = %s\n", certPath))
-	b.WriteString(fmt.Sprintf("server-key = %s\n", keyPath))
+	fmt.Fprintf(&b, "server-cert = %s\n", certPath)
+	fmt.Fprintf(&b, "server-key = %s\n", keyPath)
 	// Widen TLS to reach old clients: allow TLS 1.0 through 1.3. NORMAL already
 	// covers TLS 1.2/1.3 + DTLS (kept intact for UDP); we add TLS 1.0/1.1 back and
 	// %COMPAT for legacy interop. An explicit priority string is honored directly by
 	// the statically-bundled GnuTLS, so no host crypto policy can veto old TLS.
 	b.WriteString("tls-priorities = \"NORMAL:%SERVER_PRECEDENCE:%COMPAT:+VERS-TLS1.0:+VERS-TLS1.1\"\n")
 	if strings.TrimSpace(settings.CaCert) != "" && !settings.TlsUseFile {
-		b.WriteString(fmt.Sprintf("ca-cert = %s/ca.crt\n", dir))
+		fmt.Fprintf(&b, "ca-cert = %s/ca.crt\n", dir)
 	}
 	// We build ocserv --disable-seccomp, so the isolate-workers syscall sandbox is
 	// unavailable; disabling it explicitly avoids a startup error.
@@ -419,13 +419,13 @@ func (s *OcservService) buildServerConfig(inbound *model.Inbound, settings *ocse
 	// Auth backend returns the tunnel IP (Framed-IP-Address); no predictable/local
 	// pool assignment so the RADIUS pin is authoritative.
 	b.WriteString("predictable-ips = false\n")
-	b.WriteString(fmt.Sprintf("device = ocserv-%d\n", id))
-	b.WriteString(fmt.Sprintf("ipv4-network = %s\n", network))
-	b.WriteString(fmt.Sprintf("ipv4-netmask = %s\n", netmask))
+	fmt.Fprintf(&b, "device = ocserv-%d\n", id)
+	fmt.Fprintf(&b, "ipv4-network = %s\n", network)
+	fmt.Fprintf(&b, "ipv4-netmask = %s\n", netmask)
 	b.WriteString("tunnel-all-dns = true\n")
-	b.WriteString(fmt.Sprintf("dns = %s\n", dns1))
-	b.WriteString(fmt.Sprintf("dns = %s\n", dns2))
-	b.WriteString(fmt.Sprintf("mtu = %d\n", mtu))
+	fmt.Fprintf(&b, "dns = %s\n", dns1)
+	fmt.Fprintf(&b, "dns = %s\n", dns2)
+	fmt.Fprintf(&b, "mtu = %d\n", mtu)
 	// Full-tunnel: push the default route so ALL client traffic enters the tun,
 	// where the nftables TPROXY hook redirects it into Xray (no split routes, no
 	// masquerade — Xray owns egress).
@@ -457,7 +457,7 @@ func (s *OcservService) writeCertFiles(inbound *model.Inbound) error {
 	}
 
 	dir := s.configDir(inbound.Id)
-	os.MkdirAll(dir, 0o755)
+	_ = os.MkdirAll(dir, 0o755)
 
 	if strings.TrimSpace(settings.Certificate) != "" {
 		if err := s.writeFile(dir+"/server.crt", settings.Certificate); err != nil {
@@ -484,7 +484,7 @@ func (s *OcservService) writeCertFiles(inbound *model.Inbound) error {
 // nas-identifier `openconnect-{id}` that the RADIUS server resolves directly.
 func (s *OcservService) writeRadiusClientConfig(inbound *model.Inbound) error {
 	dir := s.configDir(inbound.Id)
-	os.MkdirAll(dir, 0o755)
+	_ = os.MkdirAll(dir, 0o755)
 
 	// Reuse the self-contained dictionary the RADIUS service ships (it already
 	// carries NAS-Identifier, Framed-IP-Address, and the accounting attributes).
@@ -524,10 +524,10 @@ bindaddr	*
 // protocol's client traffic straight out the WAN, past Xray and its routing
 // rules).
 func (s *OcservService) SetupRouting() error {
-	s.runCmd("sysctl", "-w", "net.ipv4.ip_forward=1")
+	_ = s.runCmd("sysctl", "-w", "net.ipv4.ip_forward=1")
 
-	s.runCmd("modprobe", "tun")
-	s.runCmd("modprobe", "nf_tproxy_ipv4")
+	_ = s.runCmd("modprobe", "tun")
+	_ = s.runCmd("modprobe", "nf_tproxy_ipv4")
 
 	nftables.EnsureVpnPolicyRoute(s.runCmd)
 
@@ -795,7 +795,7 @@ func (s *OcservService) getDisabledEmails() map[string]bool {
 
 // getServerIP returns the server's primary IP address (default-route source).
 func (s *OcservService) getServerIP() string {
-	output, err := exec.Command("ip", "-4", "route", "get", "1.1.1.1").Output()
+	output, err := exec.CommandContext(context.Background(), "ip", "-4", "route", "get", "1.1.1.1").Output()
 	if err == nil {
 		parts := strings.Fields(string(output))
 		for i, p := range parts {
@@ -823,7 +823,7 @@ func (s *OcservService) writeFileMode(path, content string, mode os.FileMode) er
 }
 
 func (s *OcservService) runCmd(name string, args ...string) error {
-	cmd := exec.Command(name, args...)
+	cmd := exec.CommandContext(context.Background(), name, args...)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		log.Debugf("OpenConnect: cmd '%s %s' failed: %s %v", name, strings.Join(args, " "), string(output), err)

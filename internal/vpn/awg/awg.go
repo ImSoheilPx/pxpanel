@@ -46,6 +46,7 @@
 package awg
 
 import (
+	"context"
 	cryptorand "crypto/rand"
 	"encoding/json"
 	"fmt"
@@ -816,13 +817,13 @@ func (s *AwgService) RenderClientConfigs(inbound *model.Inbound, email, endpoint
 				b.WriteString("PrivateKey = " + dev.PrivKey + "\n")
 				b.WriteString("Address = " + cidr + "\n")
 				b.WriteString("DNS = " + settings.dnsList() + "\n")
-				b.WriteString(fmt.Sprintf("MTU = %d\n", settings.mtu()))
+				fmt.Fprintf(&b, "MTU = %d\n", settings.mtu())
 				// AWG 1.0 obfuscation (must match the server, except Jc/Jmin/Jmax).
-				b.WriteString(fmt.Sprintf("Jc = %d\n", obfs.Jc))
-				b.WriteString(fmt.Sprintf("Jmin = %d\n", obfs.Jmin))
-				b.WriteString(fmt.Sprintf("Jmax = %d\n", obfs.Jmax))
-				b.WriteString(fmt.Sprintf("S1 = %d\n", obfs.S1))
-				b.WriteString(fmt.Sprintf("S2 = %d\n", obfs.S2))
+				fmt.Fprintf(&b, "Jc = %d\n", obfs.Jc)
+				fmt.Fprintf(&b, "Jmin = %d\n", obfs.Jmin)
+				fmt.Fprintf(&b, "Jmax = %d\n", obfs.Jmax)
+				fmt.Fprintf(&b, "S1 = %d\n", obfs.S1)
+				fmt.Fprintf(&b, "S2 = %d\n", obfs.S2)
 				b.WriteString("H1 = " + obfs.H1 + "\n")
 				b.WriteString("H2 = " + obfs.H2 + "\n")
 				b.WriteString("H3 = " + obfs.H3 + "\n")
@@ -832,7 +833,7 @@ func (s *AwgService) RenderClientConfigs(inbound *model.Inbound, email, endpoint
 				if psk != "" {
 					b.WriteString("PresharedKey = " + psk + "\n")
 				}
-				b.WriteString(fmt.Sprintf("Endpoint = %s:%d\n", t.host, t.port))
+				fmt.Fprintf(&b, "Endpoint = %s:%d\n", t.host, t.port)
 				b.WriteString("AllowedIPs = 0.0.0.0/0\n")
 				b.WriteString("PersistentKeepalive = 25\n")
 				// Label each config with its device slot so it is obvious that device 1 and
@@ -1258,7 +1259,7 @@ func (s *AwgService) pruneFirstSeen(seen map[string]bool) {
 }
 
 func (s *AwgService) runCmd(name string, args ...string) error {
-	cmd := exec.Command(name, args...)
+	cmd := exec.CommandContext(context.Background(), name, args...)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		logger.Debugf("AmneziaWG: cmd '%s %s' failed: %s %v", name, strings.Join(args, " "), string(output), err)

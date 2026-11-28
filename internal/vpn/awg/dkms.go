@@ -1,6 +1,7 @@
 package awg
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"os/exec"
@@ -132,7 +133,7 @@ func ensureAmneziawg() pkgmgr.ProvisionStep {
 	}
 	for _, st := range steps {
 		out, err := awgRunCmd(st[0], st[1:]...)
-		log.WriteString(fmt.Sprintf("\n$ %s\n%s", strings.Join(st, " "), out))
+		fmt.Fprintf(&log, "\n$ %s\n%s", strings.Join(st, " "), out)
 		if err != nil {
 			// `dkms add` errors if the module is already registered , not fatal.
 			if st[1] == "add" && strings.Contains(strings.ToLower(out), "already") {
@@ -160,7 +161,7 @@ func ensureAmneziawg() pkgmgr.ProvisionStep {
 			continue // the dkms install above already covered the running kernel
 		}
 		out, err := awgRunCmd("dkms", "install", "-m", amneziawgModule, "-v", awgsrc.Version, "-k", kver, "--force")
-		log.WriteString(fmt.Sprintf("\n$ dkms install -k %s\n%s", kver, out))
+		fmt.Fprintf(&log, "\n$ dkms install -k %s\n%s", kver, out)
 		if err != nil {
 			failed = append(failed, kver)
 			log.WriteString("(build for " + kver + " failed; DKMS will retry when that kernel is booted)\n")
@@ -312,7 +313,7 @@ func awgHeaderFallbacks(pkg string) []string {
 
 // awgRunCmd runs a command and returns combined output + error (for the setup log).
 func awgRunCmd(name string, args ...string) (string, error) {
-	cmd := exec.Command(name, args...)
+	cmd := exec.CommandContext(context.Background(), name, args...)
 	cmd.Env = append(os.Environ(), "DEBIAN_FRONTEND=noninteractive")
 	out, err := cmd.CombinedOutput()
 	return string(out), err

@@ -829,13 +829,13 @@ func (s *WgcService) RenderClientConfigs(inbound *model.Inbound, email, endpoint
 				b.WriteString("PrivateKey = " + dev.PrivKey + "\n")
 				b.WriteString("Address = " + cidr + "\n")
 				b.WriteString("DNS = " + settings.dnsList() + "\n")
-				b.WriteString(fmt.Sprintf("MTU = %d\n", settings.mtu()))
+				fmt.Fprintf(&b, "MTU = %d\n", settings.mtu())
 				b.WriteString("\n[Peer]\n")
 				b.WriteString("PublicKey = " + settings.ServerPubKey + "\n")
 				if psk != "" {
 					b.WriteString("PresharedKey = " + psk + "\n")
 				}
-				b.WriteString(fmt.Sprintf("Endpoint = %s:%d\n", t.host, t.port))
+				fmt.Fprintf(&b, "Endpoint = %s:%d\n", t.host, t.port)
 				b.WriteString("AllowedIPs = 0.0.0.0/0\n")
 				b.WriteString("PersistentKeepalive = 25\n")
 				remark := ""

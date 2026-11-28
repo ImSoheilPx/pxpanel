@@ -9,11 +9,11 @@ import (
 	"sync"
 	"time"
 
-	vpn "github.com/ImSoheilPx/pxpanel/internal/vpn"
 	wgctrl "github.com/Jipok/wgctrl-go"
-
 	"github.com/Jipok/wgctrl-go/wgtypes"
 	"github.com/vishvananda/netlink"
+
+	vpn "github.com/ImSoheilPx/pxpanel/internal/vpn"
 )
 
 // AmneziaWG as an OUTBOUND: the panel is the CLIENT of somebody else's AmneziaWG

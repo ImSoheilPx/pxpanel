@@ -1,6 +1,7 @@
 package procmgr
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"os/exec"
@@ -90,7 +91,7 @@ func unitPath(name string) string {
 }
 
 func systemctl(args ...string) (string, error) {
-	out, err := exec.Command("systemctl", args...).CombinedOutput()
+	out, err := exec.CommandContext(context.Background(), "systemctl", args...).CombinedOutput()
 	return strings.TrimSpace(string(out)), err
 }
 
@@ -166,7 +167,7 @@ func systemctlActive(unit string) bool {
 	if !commandExists("systemctl") {
 		return false
 	}
-	out, _ := exec.Command("systemctl", "is-active", unit).Output()
+	out, _ := exec.CommandContext(context.Background(), "systemctl", "is-active", unit).Output()
 	return strings.TrimSpace(string(out)) == "active"
 }
 
@@ -184,7 +185,7 @@ func (s *SystemdService) ServiceLog() string {
 		b.WriteString(out)
 	}
 	if commandExists("journalctl") {
-		jout, _ := exec.Command("journalctl", "-u", name, "--no-pager", "-n", "80", "-o", "short-iso").CombinedOutput()
+		jout, _ := exec.CommandContext(context.Background(), "journalctl", "-u", name, "--no-pager", "-n", "80", "-o", "short-iso").CombinedOutput()
 		if t := strings.TrimSpace(string(jout)); t != "" {
 			b.WriteString("\n\n──── journal ────\n")
 			b.WriteString(t)

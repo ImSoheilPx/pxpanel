@@ -1,6 +1,7 @@
 package pkgmgr
 
 import (
+	"context"
 	"os"
 	"os/exec"
 	"strings"
@@ -110,14 +111,14 @@ func detectVirtSystemd() (VirtInfo, bool) {
 	}
 	// Exit status 1 means "not virtualized" and is expected, so the error is
 	// ignored and the printed id is what decides.
-	out, _ := exec.Command("systemd-detect-virt").Output()
+	out, _ := exec.CommandContext(context.Background(), "systemd-detect-virt").Output()
 	id := strings.ToLower(strings.TrimSpace(string(out)))
 	if id == "" || id == "none" {
 		return VirtInfo{}, true
 	}
 
 	kind := "vm"
-	cout, _ := exec.Command("systemd-detect-virt", "-c").Output()
+	cout, _ := exec.CommandContext(context.Background(), "systemd-detect-virt", "-c").Output()
 	if c := strings.ToLower(strings.TrimSpace(string(cout))); c != "" && c != "none" {
 		kind = "container"
 	}

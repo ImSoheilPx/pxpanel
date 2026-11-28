@@ -618,7 +618,7 @@ func disableUnitRecording(unit, core string) {
 	if enabled || active || currentBundle().DistroUnitExists(name) {
 		manifest.RecordUnit(name, core, enabled, active)
 	}
-	_ = exec.Command("systemctl", "disable", "--now", name).Run()
+	_ = exec.CommandContext(context.Background(), "systemctl", "disable", "--now", name).Run()
 }
 
 // migrateOnce tears down the previous systemd-based design (bundled units +
@@ -647,7 +647,7 @@ func migrateFromSystemd() {
 		// the core uninstall replays it.
 		if bundledDaemonBin("openvpn") != "" {
 			// Stop + disable OpenVPN per-inbound instances.
-			out, _ := exec.Command("systemctl", "list-units", "--all", "--no-legend", "openvpn-server@*").Output()
+			out, _ := exec.CommandContext(context.Background(), "systemctl", "list-units", "--all", "--no-legend", "openvpn-server@*").Output()
 			for _, line := range strings.Split(string(out), "\n") {
 				fields := strings.Fields(strings.TrimLeft(line, "●* "))
 				if len(fields) > 0 && strings.HasPrefix(fields[0], "openvpn-server@") {
@@ -675,7 +675,7 @@ func migrateFromSystemd() {
 		} {
 			_ = os.Remove(f)
 		}
-		_ = exec.Command("systemctl", "daemon-reload").Run()
+		_ = exec.CommandContext(context.Background(), "systemctl", "daemon-reload").Run()
 		log.Info("procmgr: migrated VPN daemons off systemd (now child processes)")
 
 		// Kill orphaned bundled daemons left by a previous panel that was killed
@@ -709,18 +709,18 @@ func migrateFromSystemd() {
 				if bin == "" {
 					continue // no bundle: whatever is running is the host's, not ours
 				}
-				_ = exec.Command("pkill", "-KILL", "-f", bin).Run()
+				_ = exec.CommandContext(context.Background(), "pkill", "-KILL", "-f", bin).Run()
 			}
 			// Orphaned bundled pluto from a crashed panel (holds UDP 500/4500).
 			b := currentBundle()
 			if b.UsingBundledIpsec() && b.LibreswanBundleRoot() != "" {
-				_ = exec.Command("pkill", "-KILL", "-f", b.LibreswanBundleRoot()+"/libexec/ipsec/pluto.bin").Run()
+				_ = exec.CommandContext(context.Background(), "pkill", "-KILL", "-f", b.LibreswanBundleRoot()+"/libexec/ipsec/pluto.bin").Run()
 			}
 			// Orphaned bundled charon (IKEv2) from a crashed panel — it also holds UDP
 			// 500/4500. charon runs via the musl loader wrapper, so its cmdline contains
 			// the absolute charon.bin path; match on that.
 			if b.HasStrongswanBundle() && b.StrongswanBundleRoot() != "" {
-				_ = exec.Command("pkill", "-KILL", "-f", b.StrongswanBundleRoot()+"/libexec/ipsec/charon.bin").Run()
+				_ = exec.CommandContext(context.Background(), "pkill", "-KILL", "-f", b.StrongswanBundleRoot()+"/libexec/ipsec/charon.bin").Run()
 			}
 			// Orphaned ocserv from a crashed/killed previous panel. ocserv RENAMES its
 			// processes to ocserv-main/-sm/-worker, so `pkill -f <exec path>` can never
@@ -731,7 +731,7 @@ func migrateFromSystemd() {
 			// ocserv on this box can plausibly be ours.
 			if installedCore["openconnect"] {
 				for _, comm := range []string{"ocserv-main", "ocserv-sm", "ocserv-worker", "ocserv"} {
-					_ = exec.Command("pkill", "-KILL", "-x", comm).Run()
+					_ = exec.CommandContext(context.Background(), "pkill", "-KILL", "-x", comm).Run()
 				}
 			}
 		}

@@ -9,9 +9,12 @@
 package accounts
 
 import (
+	"errors"
+
+	"gorm.io/gorm"
+
 	"github.com/ImSoheilPx/pxpanel/internal/database/model"
 	"github.com/ImSoheilPx/pxpanel/internal/vpn"
-	"gorm.io/gorm"
 )
 
 // accountsMigratedKey is the settings-table flag the vpn-ui backfill stamped
@@ -164,7 +167,7 @@ func SettingsGet(tx *gorm.DB, key string) (*model.Setting, error) {
 	}
 	var setting model.Setting
 	err := tx.Where("key = ?", key).First(&setting).Error
-	if err == gorm.ErrRecordNotFound {
+	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, nil
 	}
 	if err != nil {

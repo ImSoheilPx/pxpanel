@@ -34,6 +34,7 @@
 package pptp
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -325,8 +326,8 @@ func (s *PptpService) buildPPPOptions(inbound *model.Inbound) (string, error) {
 	b.WriteString("nologfd\n")
 	b.WriteString("lcp-echo-interval 30\n")
 	b.WriteString("lcp-echo-failure 4\n")
-	b.WriteString(fmt.Sprintf("mtu %d\n", mtu))
-	b.WriteString(fmt.Sprintf("mru %d\n", mtu))
+	fmt.Fprintf(&b, "mtu %d\n", mtu)
+	fmt.Fprintf(&b, "mru %d\n", mtu)
 	b.WriteString("plugin radius.so\n")
 	b.WriteString("radius-config-file /etc/ppp/radius/pptp.conf\n")
 
@@ -487,7 +488,7 @@ func (s *PptpService) writeFileMode(path, content string, mode os.FileMode) erro
 }
 
 func (s *PptpService) runCmd(name string, args ...string) error {
-	cmd := exec.Command(name, args...)
+	cmd := exec.CommandContext(context.Background(), name, args...)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		log.Debugf("PPTP: cmd '%s %s' failed: %s %v", name, strings.Join(args, " "), string(output), err)

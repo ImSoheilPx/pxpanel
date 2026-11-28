@@ -45,6 +45,7 @@
 package l2tp
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -283,7 +284,7 @@ func (s *L2tpService) buildXl2tpdConfig(inbounds []*model.Inbound) string {
 		// xl2tpd accepts multiple `ip range` lines; each range's client IP is then
 		// pinned deterministically by RADIUS (Framed-IP-Address).
 		for _, r := range ranges {
-			b.WriteString(fmt.Sprintf("ip range = %s\n", r))
+			fmt.Fprintf(&b, "ip range = %s\n", r)
 		}
 		if localIp == "" {
 			localIp = settings.LocalIp
@@ -296,7 +297,7 @@ func (s *L2tpService) buildXl2tpdConfig(inbounds []*model.Inbound) string {
 		localIp = "10.0.2.1"
 	}
 
-	b.WriteString(fmt.Sprintf("local ip = %s\n", localIp))
+	fmt.Fprintf(&b, "local ip = %s\n", localIp)
 	b.WriteString("require authentication = yes\n")
 	b.WriteString("name = l2tp\n")
 	b.WriteString("pppoptfile = /etc/ppp/options.xl2tpd\n")
@@ -355,14 +356,14 @@ func (s *L2tpService) buildPPPOptions(inbound *model.Inbound) (string, error) {
 	// a dual-stack client could negotiate IPv6 and leak IPv6 traffic and DNS
 	// straight out the host's default route, bypassing Xray entirely.
 	b.WriteString("noipv6\n")
-	b.WriteString(fmt.Sprintf("ms-dns %s\n", dns1))
-	b.WriteString(fmt.Sprintf("ms-dns %s\n", dns2))
+	fmt.Fprintf(&b, "ms-dns %s\n", dns1)
+	fmt.Fprintf(&b, "ms-dns %s\n", dns2)
 	b.WriteString("proxyarp\n")
 	b.WriteString("lcp-echo-interval 30\n")
 	b.WriteString("lcp-echo-failure 4\n")
 	b.WriteString("connect-delay 5000\n")
-	b.WriteString(fmt.Sprintf("mtu %d\n", mtu))
-	b.WriteString(fmt.Sprintf("mru %d\n", mtu))
+	fmt.Fprintf(&b, "mtu %d\n", mtu)
+	fmt.Fprintf(&b, "mru %d\n", mtu)
 	b.WriteString("nodefaultroute\n")
 	b.WriteString("plugin radius.so\n")
 	b.WriteString("radius-config-file /etc/ppp/radius/l2tp.conf\n")
@@ -564,7 +565,7 @@ func (s *L2tpService) RestartServices() error {
 			// Host libreswan: ensure the NSS db exists and the unit is enabled, then restart.
 			_, _ = pkgmgr.InitIpsecNSS()
 			if commandExists("systemctl") {
-				_ = exec.Command("systemctl", "enable", "ipsec").Run()
+				_ = exec.CommandContext(context.Background(), "systemctl", "enable", "ipsec").Run()
 			}
 			if out, err := pkgmgr.RestartIpsecService(); err != nil {
 				log.Warning("L2TP: failed to restart ipsec:", err, strings.TrimSpace(out))
@@ -577,7 +578,7 @@ func (s *L2tpService) RestartServices() error {
 
 // StopServices stops the L2TP (xl2tpd) child process.
 func (s *L2tpService) StopServices() {
-	procmgr.GetProcManager().Stop("xl2tpd")
+	_ = procmgr.GetProcManager().Stop("xl2tpd") // best-effort; status is re-derived from the child table
 }
 
 // InitL2tp initializes L2TP services on panel startup.
@@ -665,7 +666,7 @@ func (s *L2tpService) writeFileMode(path, content string, mode os.FileMode) erro
 }
 
 func (s *L2tpService) runCmd(name string, args ...string) error {
-	cmd := exec.Command(name, args...)
+	cmd := exec.CommandContext(context.Background(), name, args...)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		log.Debugf("L2TP: cmd '%s %s' failed: %s %v", name, strings.Join(args, " "), string(output), err)

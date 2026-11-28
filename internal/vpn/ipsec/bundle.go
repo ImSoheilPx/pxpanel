@@ -210,7 +210,7 @@ func IpsecConnNames(conf string) []string { return ipsecConnNames(conf) }
 // StopBundledPluto stops the panel-managed pluto child (best-effort clean IKE
 // shutdown first).
 func StopBundledPluto() error {
-	_ = exec.Command(bundledIpsecPath(), "whack", "--shutdown").Run()
+	_ = exec.CommandContext(context.Background(), bundledIpsecPath(), "whack", "--shutdown").Run()
 	return procmgr.GetProcManager().Stop(ipsecProcName)
 }
 

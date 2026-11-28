@@ -346,7 +346,7 @@ func (s *RadiusService) handleAuth(w radius.ResponseWriter, r *radius.Request) {
 		} else {
 			logger.Infof("RADIUS: auth accepted (PAP) user=%s nas=%s", username, nasID)
 		}
-		w.Write(accept)
+		_ = w.Write(accept)
 		return
 	}
 
@@ -414,7 +414,7 @@ func (s *RadiusService) handleAuth(w radius.ResponseWriter, r *radius.Request) {
 	_ = rfc2869.AcctInterimInterval_Set(accept, rfc2869.AcctInterimInterval(60))
 
 	logger.Infof("RADIUS: auth accepted user=%s nas=%s ip=%v", username, nasID, clientIP)
-	w.Write(accept)
+	_ = w.Write(accept)
 }
 
 // handleAcct processes RADIUS Accounting-Request packets (Start/Stop/Interim-Update).
@@ -426,7 +426,7 @@ func (s *RadiusService) handleAcct(w radius.ResponseWriter, r *radius.Request) {
 	framedIP := rfc2865.FramedIPAddress_Get(r.Packet)
 
 	// Always acknowledge
-	defer w.Write(r.Response(radius.CodeAccountingResponse))
+	defer func() { _ = w.Write(r.Response(radius.CodeAccountingResponse)) }()
 
 	// The inbound id is kept, not discarded. It is the only thing that lets this
 	// session's bytes be attributed to ONE membership instead of to the account as a
@@ -977,7 +977,7 @@ func (s *RadiusService) KillSessionsByEmail(emails map[string]bool) {
 // killPppdByIP finds and kills the pppd process that owns the given PPP client IP.
 func (s *RadiusService) killPppdByIP(ip string) {
 	// Check all ppp interfaces for matching IP
-	output, err := exec.Command("ip", "-o", "addr", "show").Output()
+	output, err := exec.CommandContext(context.Background(), "ip", "-o", "addr", "show").Output()
 	if err != nil {
 		return
 	}
@@ -1003,7 +1003,7 @@ func (s *RadiusService) killPppdByIP(ip string) {
 		if pid != "" {
 			// Best-effort kill: the session is already gone from the panel's view,
 			// and pppd exiting on its own is the same end state.
-			_ = exec.Command("kill", pid).Run()
+			_ = exec.CommandContext(context.Background(), "kill", pid).Run()
 			logger.Infof("RADIUS: killed pppd pid=%s iface=%s ip=%s", pid, iface, ip)
 		}
 	}
@@ -1132,7 +1132,7 @@ func (s *RadiusService) isIPActive(ip string, protocol string) bool {
 		// this probe (swanctl --list-sas).
 		return vpn.ProbeIPActive("ikev2", ip)
 	default: // l2tp / pptp: the IP is assigned to a local PPP interface
-		output, err := exec.Command("ip", "-o", "addr", "show").Output()
+		output, err := exec.CommandContext(context.Background(), "ip", "-o", "addr", "show").Output()
 		if err != nil {
 			return true // assume active on error
 		}

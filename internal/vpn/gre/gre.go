@@ -71,7 +71,9 @@
 package gre
 
 import (
+	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"hash/fnv"
 	"math/bits"
@@ -1166,7 +1168,7 @@ func groSettingID(iface string) string { return iface + "/gro" }
 // it change, which is worth recording verbatim so a restore does not claim to have done
 // something it could not.
 func ethtoolFeature(iface, feature string) string {
-	out, err := exec.Command("ethtool", "-k", iface).Output()
+	out, err := exec.CommandContext(context.Background(), "ethtool", "-k", iface).Output()
 	if err != nil {
 		return ""
 	}
@@ -1204,7 +1206,7 @@ func errIsExist(err error) bool {
 	if err == nil {
 		return false
 	}
-	if err == unix.EEXIST || err == unix.EADDRINUSE {
+	if errors.Is(err, unix.EEXIST) || errors.Is(err, unix.EADDRINUSE) {
 		return true
 	}
 	s := strings.ToLower(err.Error())
@@ -1563,21 +1565,21 @@ func (s *GreService) RenderPeerConfigs(inbound *model.Inbound, email, endpointHo
 func renderGreRecipe(c GrePeerConfig, multi bool, idx int) string {
 	var b strings.Builder
 	if multi {
-		b.WriteString(fmt.Sprintf("# Peer %d\n", idx+1))
+		fmt.Fprintf(&b, "# Peer %d\n", idx+1)
 	}
 	b.WriteString("# GRE tunnel settings for your router\n")
-	b.WriteString(fmt.Sprintf("Remote / Peer IP Address : %s\n", c.ServerIp))
+	fmt.Fprintf(&b, "Remote / Peer IP Address : %s\n", c.ServerIp)
 	if c.Dynamic {
 		b.WriteString("Local / Your public IP   : (any - this peer is not pinned)\n")
 	} else {
-		b.WriteString(fmt.Sprintf("Local / Your public IP   : %s\n", c.PeerIp))
+		fmt.Fprintf(&b, "Local / Your public IP   : %s\n", c.PeerIp)
 	}
-	b.WriteString(fmt.Sprintf("Local Tunnel Address     : %s\n", c.InnerIp))
-	b.WriteString(fmt.Sprintf("Local Tunnel Netmask     : %s\n", c.InnerMask))
-	b.WriteString(fmt.Sprintf("Remote Tunnel Address    : %s\n", c.GatewayIp))
-	b.WriteString(fmt.Sprintf("Route all traffic        : default via %s\n", c.GatewayIp))
+	fmt.Fprintf(&b, "Local Tunnel Address     : %s\n", c.InnerIp)
+	fmt.Fprintf(&b, "Local Tunnel Netmask     : %s\n", c.InnerMask)
+	fmt.Fprintf(&b, "Remote Tunnel Address    : %s\n", c.GatewayIp)
+	fmt.Fprintf(&b, "Route all traffic        : default via %s\n", c.GatewayIp)
 	if c.Mtu > 0 {
-		b.WriteString(fmt.Sprintf("MTU                      : %d\n", c.Mtu))
+		fmt.Fprintf(&b, "MTU                      : %d\n", c.Mtu)
 	}
 	switch c.Mode {
 	case "ipsec":
@@ -1588,11 +1590,11 @@ func renderGreRecipe(c GrePeerConfig, multi bool, idx int) string {
 		b.WriteString("Encryption               : none (bare GRE)\n")
 	}
 	if c.IpsecPsk != "" {
-		b.WriteString(fmt.Sprintf("IPsec pre-shared key     : %s\n", c.IpsecPsk))
-		b.WriteString(fmt.Sprintf("IPsec remote identity    : %s\n", c.IpsecId))
+		fmt.Fprintf(&b, "IPsec pre-shared key     : %s\n", c.IpsecPsk)
+		fmt.Fprintf(&b, "IPsec remote identity    : %s\n", c.IpsecId)
 	}
 	if c.FouPort > 0 {
-		b.WriteString(fmt.Sprintf("FOU (UDP encap) port     : %d  [Linux/OpenWrt peers only]\n", c.FouPort))
+		fmt.Fprintf(&b, "FOU (UDP encap) port     : %d  [Linux/OpenWrt peers only]\n", c.FouPort)
 	}
 
 	b.WriteString("\n")
@@ -1610,7 +1612,7 @@ func renderGreRecipe(c GrePeerConfig, multi bool, idx int) string {
 func renderGreMikrotik(c GrePeerConfig, multi bool, idx int) string {
 	var b strings.Builder
 	if multi {
-		b.WriteString(fmt.Sprintf("# Peer %d\n", idx+1))
+		fmt.Fprintf(&b, "# Peer %d\n", idx+1)
 	}
 	b.WriteString(greOuterRouteNote(c, "The commands below add that host route FIRST."))
 	b.WriteString("\n")
@@ -1622,7 +1624,7 @@ func renderGreMikrotik(c GrePeerConfig, multi bool, idx int) string {
 func renderGreLinux(c GrePeerConfig, multi bool, idx int) string {
 	var b strings.Builder
 	if multi {
-		b.WriteString(fmt.Sprintf("# Peer %d\n", idx+1))
+		fmt.Fprintf(&b, "# Peer %d\n", idx+1)
 	}
 	b.WriteString(greOuterRouteNote(c, "The commands below add that host route FIRST."))
 	b.WriteString("\n")
@@ -1648,25 +1650,25 @@ func greOuterRouteNote(c GrePeerConfig, closing string) string {
 // block that used to carry it, and GRE never negotiates it.
 func greMikrotikCommands(c GrePeerConfig) string {
 	var b strings.Builder
-	b.WriteString(fmt.Sprintf("/interface gre add name=gre-pxpanel remote-address=%s", c.ServerIp))
+	fmt.Fprintf(&b, "/interface gre add name=gre-pxpanel remote-address=%s", c.ServerIp)
 	if !c.Dynamic {
-		b.WriteString(fmt.Sprintf(" local-address=%s", c.PeerIp))
+		fmt.Fprintf(&b, " local-address=%s", c.PeerIp)
 	}
 	if c.Mtu > 0 {
-		b.WriteString(fmt.Sprintf(" mtu=%d", c.Mtu))
+		fmt.Fprintf(&b, " mtu=%d", c.Mtu)
 	}
 	b.WriteString(" clamp-tcp-mss=yes keepalive=10s,10\n")
-	b.WriteString(fmt.Sprintf("/ip address add address=%s/32 interface=gre-pxpanel\n", c.InnerIp))
-	b.WriteString(fmt.Sprintf("/ip route add dst-address=%s/32 gateway=ISP-GATEWAY comment=\"gre outer, do not tunnel\"\n",
-		c.ServerIp))
-	b.WriteString(fmt.Sprintf("/ip route add dst-address=0.0.0.0/0 gateway=%s\n", c.GatewayIp))
+	fmt.Fprintf(&b, "/ip address add address=%s/32 interface=gre-pxpanel\n", c.InnerIp)
+	fmt.Fprintf(&b, "/ip route add dst-address=%s/32 gateway=ISP-GATEWAY comment=\"gre outer, do not tunnel\"\n",
+		c.ServerIp)
+	fmt.Fprintf(&b, "/ip route add dst-address=0.0.0.0/0 gateway=%s\n", c.GatewayIp)
 	if c.IpsecPsk != "" {
-		b.WriteString(fmt.Sprintf("/ip ipsec peer add address=%s/32 exchange-mode=ike2\n", c.ServerIp))
-		b.WriteString(fmt.Sprintf(
+		fmt.Fprintf(&b, "/ip ipsec peer add address=%s/32 exchange-mode=ike2\n", c.ServerIp)
+		fmt.Fprintf(&b,
 			"/ip ipsec identity add peer=%s secret=\"%s\" remote-id=fqdn:%s\n",
-			c.ServerIp, c.IpsecPsk, c.IpsecId))
-		b.WriteString(fmt.Sprintf("/ip ipsec policy add src-address=%s/32 dst-address=%s/32 protocol=gre tunnel=no action=encrypt\n",
-			firstNonEmpty(c.PeerIp, "YOUR-PUBLIC-IP"), c.ServerIp))
+			c.ServerIp, c.IpsecPsk, c.IpsecId)
+		fmt.Fprintf(&b, "/ip ipsec policy add src-address=%s/32 dst-address=%s/32 protocol=gre tunnel=no action=encrypt\n",
+			firstNonEmpty(c.PeerIp, "YOUR-PUBLIC-IP"), c.ServerIp)
 	}
 	if c.FouPort > 0 {
 		b.WriteString("# NOTE: RouterOS has no FOU support. Use the Linux recipe on a peer\n" +
@@ -1681,9 +1683,9 @@ func greLinuxCommands(c GrePeerConfig) string {
 	var b strings.Builder
 	dev := "gre-pxpanel"
 	if c.FouPort > 0 {
-		b.WriteString(fmt.Sprintf("ip fou add port %d ipproto 47\n", c.FouPort))
-		b.WriteString(fmt.Sprintf("ip link add %s type gre remote %s ttl 64 encap fou encap-sport auto encap-dport %d\n",
-			dev, c.ServerIp, c.FouPort))
+		fmt.Fprintf(&b, "ip fou add port %d ipproto 47\n", c.FouPort)
+		fmt.Fprintf(&b, "ip link add %s type gre remote %s ttl 64 encap fou encap-sport auto encap-dport %d\n",
+			dev, c.ServerIp, c.FouPort)
 		// GRO must be off on the interface that RECEIVES the FOU packets. Measured on a
 		// clean 1Gb path: with GRO on, a 10MB download ran at 28 KB/s and never finished;
 		// with it off, 11 MB/s. Coalesced UDP is not decapsulated correctly, so almost
@@ -1693,18 +1695,18 @@ func greLinuxCommands(c GrePeerConfig) string {
 		b.WriteString("ethtool -K $(ip route show default | awk '{print $5; exit}') gro off" +
 			"   # REQUIRED for FOU, coalesced UDP is not decapsulated correctly\n")
 	} else {
-		b.WriteString(fmt.Sprintf("ip link add %s type gre remote %s ttl 64\n", dev, c.ServerIp))
+		fmt.Fprintf(&b, "ip link add %s type gre remote %s ttl 64\n", dev, c.ServerIp)
 	}
-	b.WriteString(fmt.Sprintf("ip addr add %s/32 dev %s\n", c.InnerIp, dev))
+	fmt.Fprintf(&b, "ip addr add %s/32 dev %s\n", c.InnerIp, dev)
 	if c.Mtu > 0 {
-		b.WriteString(fmt.Sprintf("ip link set %s mtu %d\n", dev, c.Mtu))
+		fmt.Fprintf(&b, "ip link set %s mtu %d\n", dev, c.Mtu)
 	}
-	b.WriteString(fmt.Sprintf("ip link set %s up\n", dev))
+	fmt.Fprintf(&b, "ip link set %s up\n", dev)
 	// Computed rather than a placeholder: the client can read its current gateway itself, so
 	// this block stays copy-pasteable and cannot be pasted in the wrong order.
-	b.WriteString(fmt.Sprintf("GW=$(ip route show default | awk '{print $3; exit}'); " +
-		"DEV=$(ip route show default | awk '{print $5; exit}')\n"))
-	b.WriteString(fmt.Sprintf("ip route add %s/32 via $GW dev $DEV   # gre outer, do not tunnel\n", c.ServerIp))
+	fmt.Fprintf(&b, "GW=$(ip route show default | awk '{print $3; exit}'); "+
+		"DEV=$(ip route show default | awk '{print $5; exit}')\n")
+	fmt.Fprintf(&b, "ip route add %s/32 via $GW dev $DEV   # gre outer, do not tunnel\n", c.ServerIp)
 	b.WriteString("ip route replace default dev " + dev + "\n")
 	return b.String()
 }
@@ -2016,7 +2018,7 @@ func (s *GreService) pruneFirstSeen(seen map[string]bool) {
 }
 
 func (s *GreService) runCmd(name string, args ...string) error {
-	cmd := exec.Command(name, args...)
+	cmd := exec.CommandContext(context.Background(), name, args...)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		logger.Debugf("GRE: cmd '%s %s' failed: %s %v", name, strings.Join(args, " "), string(output), err)

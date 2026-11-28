@@ -97,7 +97,7 @@ func newMembershipFixture(t *testing.T, profile model.ResellerProfile, charged i
 		t.Fatalf("create reseller profile: %v", err)
 	}
 
-	homeTotal, awayTotal := int64(5*gb), int64(5*gb)
+	homeTotal, awayTotal := 5*gb, 5*gb
 	if len(soldTotals) > 0 {
 		homeTotal = soldTotals[0]
 		awayTotal = soldTotals[0]

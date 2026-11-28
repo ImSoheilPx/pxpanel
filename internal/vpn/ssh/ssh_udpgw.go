@@ -180,8 +180,12 @@ func (m *sshManager) forwardUdpgw(srv *sshServer, sess *sshSession, pkt []byte, 
 	uconn := f.uconn
 	flowsMu.Unlock()
 
-	if _, err := uconn.Write(socksEncodeUDP(destIP.String(), destPort, payload)); err == nil {
-		sess.acct.up.Add(int64(len(payload)))
+	// Count BEFORE the datagram leaves (same contract as the TCP relay): the
+	// reply can outrun this goroutine's next instruction, and a counter swap
+	// in that window would drop the chunk from the accounting.
+	sess.acct.up.Add(int64(len(payload)))
+	if _, err := uconn.Write(socksEncodeUDP(destIP.String(), destPort, payload)); err != nil {
+		sess.acct.up.Add(-int64(len(payload)))
 	}
 }
 
@@ -218,10 +222,11 @@ func (f *udpFlow) readReplies(sess *sshSession, writeFrame func([]byte) error) {
 		if reply == nil {
 			continue
 		}
+		sess.acct.down.Add(int64(len(payload)))
 		if err := writeFrame(reply); err != nil {
+			sess.acct.down.Add(-int64(len(payload)))
 			return
 		}
-		sess.acct.down.Add(int64(len(payload)))
 	}
 }
 

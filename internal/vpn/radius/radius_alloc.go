@@ -18,6 +18,7 @@ package radius
 //     (the source implementation, verbatim) keeps PPP teardowns working.
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net"
@@ -72,7 +73,7 @@ func (s *RadiusService) killPPPByIP(ip string) {
 // interface whose peer address is ip (freeing the tunnel IP). The supervising
 // daemon reaps the orphaned pppd. (vpn-ui web/service/radius.go killPPPByIP.)
 func pppKillByIPLink(ip string) error {
-	out, err := exec.Command("ip", "-o", "addr", "show").Output()
+	out, err := exec.CommandContext(context.Background(), "ip", "-o", "addr", "show").Output()
 	if err != nil {
 		return err
 	}
@@ -89,7 +90,7 @@ func pppKillByIPLink(ip string) error {
 		if !strings.HasPrefix(iface, "ppp") {
 			continue
 		}
-		return exec.Command("ip", "link", "delete", iface).Run()
+		return exec.CommandContext(context.Background(), "ip", "link", "delete", iface).Run()
 	}
 	return nil
 }
