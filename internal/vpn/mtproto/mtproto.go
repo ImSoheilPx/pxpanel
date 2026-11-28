@@ -987,7 +987,7 @@ func (s *MtprotoService) buildServerConfig(inbound *model.Inbound, settings *mtp
 	// string keys the secret, the counters, the routing account and client_traffics.
 	b.WriteString("[access.users]\n")
 	for _, c := range clients {
-		fmt.Fprintf(&b, "%q = %q\n", tomlEscape(c.Email), tomlEscape(tag))
+		fmt.Fprintf(&b, "%q = %q\n", tomlEscape(c.Email), tomlEscape(c.Secret))
 	}
 	b.WriteString("\n")
 
