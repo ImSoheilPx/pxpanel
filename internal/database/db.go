@@ -19,6 +19,7 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/ImSoheilPx/pxpanel/internal/config"
@@ -36,7 +37,14 @@ import (
 	"gorm.io/gorm/logger"
 )
 
-var db *gorm.DB
+// db is the package global handle. Access is guarded by dbMu because a
+// straggler goroutine (a tunnel's host-key persist callback, a supervisor
+// tick) may legitimately still call GetDB while InitDB re-opens the handle -
+// visible as a data race under -race in the test suite.
+var (
+	dbMu sync.RWMutex
+	db   *gorm.DB
+)
 
 var backupSQLiteTimeout = 2 * time.Minute
 
@@ -3492,7 +3500,9 @@ func InitDB(dbPath string) error {
 		if dsn == "" {
 			return errors.New("PXPANEL_DB_TYPE=postgres but PXPANEL_DB_DSN is empty")
 		}
+		dbMu.Lock()
 		db, err = openPostgresWithRetry(dsn, c)
+		dbMu.Unlock()
 		if err != nil {
 			return err
 		}
@@ -3508,7 +3518,9 @@ func InitDB(dbPath string) error {
 		sync := sqliteSynchronous()
 		journal := sqliteJournalMode()
 		dsn := dbPath + "?_journal_mode=" + journal + "&_busy_timeout=10000&_synchronous=" + sync + "&_txlock=immediate"
+		dbMu.Lock()
 		db, err = gorm.Open(sqlite.Open(dsn), c)
+		dbMu.Unlock()
 		if err != nil {
 			return err
 		}
@@ -3687,6 +3699,8 @@ func envInt(key string, def int) int {
 }
 
 func CloseDB() error {
+	dbMu.RLock()
+	defer dbMu.RUnlock()
 	if db != nil {
 		sqlDB, err := db.DB()
 		if err != nil {
@@ -3698,6 +3712,8 @@ func CloseDB() error {
 }
 
 func GetDB() *gorm.DB {
+	dbMu.RLock()
+	defer dbMu.RUnlock()
 	return db
 }
 

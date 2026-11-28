@@ -657,7 +657,7 @@ func ovpnOutBuildConfig(st *ovpnOutSettings, iface, dir string) (string, error) 
 		if port == 0 {
 			port = 1194
 		}
-		b.WriteString(fmt.Sprintf("remote %s %d %s\n", strings.TrimSpace(st.Server), port, proto))
+		fmt.Fprintf(&b, "remote %s %d %s\n", strings.TrimSpace(st.Server), port, proto)
 		b.WriteString(ovpnOutInline("ca", st.Ca))
 		b.WriteString(ovpnOutInline("cert", st.Cert))
 		b.WriteString(ovpnOutInline("key", st.Key))
@@ -687,7 +687,7 @@ func ovpnOutBuildConfig(st *ovpnOutSettings, iface, dir string) (string, error) 
 	// Forced and deterministic, so Up/Down/Status know the device without parsing the log,
 	// and so the synthesized freedom outbound can be bound to it the moment Up returns.
 	b.WriteString("dev-type tun\n")
-	b.WriteString(fmt.Sprintf("dev %s\n", iface))
+	fmt.Fprintf(&b, "dev %s\n", iface)
 	// The three route gates. See the file header; between them a pushed OR a locally written
 	// redirect-gateway cannot reach the host routing table. Two of the three are about PUSHED
 	// options and so belong only to the TLS path, which is the one that pulls.
@@ -718,7 +718,7 @@ func ovpnOutBuildConfig(st *ovpnOutSettings, iface, dir string) (string, error) 
 			"redirect-gateway", "redirect-private", "route", "route-ipv6",
 			"block-outside-dns", "block-ipv6", "dhcp-option",
 		} {
-			b.WriteString(fmt.Sprintf("pull-filter ignore \"%s\"\n", opt))
+			fmt.Fprintf(&b, "pull-filter ignore \"%s\"\n", opt)
 		}
 	}
 	// persist-tun keeps ONE tun device across reconnects. Without it a re-key or a dropped
@@ -748,7 +748,7 @@ func ovpnOutBuildConfig(st *ovpnOutSettings, iface, dir string) (string, error) 
 		b.WriteString("key-direction 1\n")
 	}
 	if st.Mtu > 0 {
-		b.WriteString(fmt.Sprintf("tun-mtu %d\n", st.Mtu))
+		fmt.Fprintf(&b, "tun-mtu %d\n", st.Mtu)
 		if !facts.staticKey {
 			// An operator who sets an MTU knows something about the path that the server does
 			// not, so the server's pushed value must not overwrite it. Nothing is pushed in
@@ -760,7 +760,7 @@ func ovpnOutBuildConfig(st *ovpnOutSettings, iface, dir string) (string, error) 
 		// A file, never the console: a bare auth-user-pass makes OpenVPN block on a terminal
 		// that a supervised child process does not have, which shows up as a tunnel that
 		// never connects and a log that stops after "Need username/password".
-		b.WriteString(fmt.Sprintf("auth-user-pass %s\n", ovpnOutAuthPath(dir)))
+		fmt.Fprintf(&b, "auth-user-pass %s\n", ovpnOutAuthPath(dir))
 	}
 	if host := strings.TrimSpace(st.SocksProxy); host != "" {
 		port := st.SocksProxyPort
@@ -774,9 +774,9 @@ func ovpnOutBuildConfig(st *ovpnOutSettings, iface, dir string) (string, error) 
 		// repeated socks-proxy last-one-wins. Verified against the bundled 2.6.12: two
 		// socks-proxy lines parse, and it dials the second.
 		if strings.TrimSpace(st.SocksProxyUser) != "" {
-			b.WriteString(fmt.Sprintf("socks-proxy %s %d %s\n", host, port, ovpnOutSocksAuthPath(dir)))
+			fmt.Fprintf(&b, "socks-proxy %s %d %s\n", host, port, ovpnOutSocksAuthPath(dir))
 		} else {
-			b.WriteString(fmt.Sprintf("socks-proxy %s %d\n", host, port))
+			fmt.Fprintf(&b, "socks-proxy %s %d\n", host, port)
 		}
 		// Without this a proxy that is momentarily unreachable is FATAL: OpenVPN treats a
 		// SOCKS error as a hard connection failure and, with a single remote and no retry,
