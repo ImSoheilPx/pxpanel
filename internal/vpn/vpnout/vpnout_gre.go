@@ -857,9 +857,9 @@ func greOutSyncIpsec(tag string, st *greOutSettings, local, remote net.IP, carri
 
 // greOutWriteIpsecConf puts this tunnel's connection on disk. 0600: it holds the PSK.
 func greOutWriteIpsecConf(tag string, st *greOutSettings, local, remote net.IP, carried bool) error {
-	_ = os.MkdirAll(swanctlConfDir, 0755)
+	_ = os.MkdirAll(swanctlConfDir, 0o755)
 	return os.WriteFile(greOutIpsecConfPath(tag),
-		[]byte(greOutBuildIpsecConf(tag, st, local, remote, carried)), 0600)
+		[]byte(greOutBuildIpsecConf(tag, st, local, remote, carried)), 0o600)
 }
 
 // greOutBuildIpsecConf renders that connection.

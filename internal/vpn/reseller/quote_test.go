@@ -1453,8 +1453,13 @@ func TestQuoteInvariantsUnderAdversarialInput(t *testing.T) {
 		cleared int64
 	}{
 		{false, 0},
-		{true, -absurd}, {true, -1}, {true, 0}, {true, 1},
-		{true, gb}, {true, 100 * gb}, {true, absurd},
+		{true, -absurd},
+		{true, -1},
+		{true, 0},
+		{true, 1},
+		{true, gb},
+		{true, 100 * gb},
+		{true, absurd},
 	}
 
 	seen := map[string]int{}

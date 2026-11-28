@@ -24,7 +24,7 @@ import (
 // nas_identifier the RADIUS server maps accounts by ("l2tp", "pptp").
 func GenerateRadiusClientConfig(protocol string, secret string) error {
 	dir := "/etc/ppp/radius"
-	os.MkdirAll(dir, 0755)
+	_ = os.MkdirAll(dir, 0o755)
 
 	// Create empty mapfile (port-id-map) if it doesn't exist — required by libradcli
 	mapFile := dir + "/port-id-map"
@@ -53,13 +53,13 @@ seqfile		%s
 `, dir, dir, dir, protocol, seqFile)
 
 	configPath := fmt.Sprintf("%s/%s.conf", dir, protocol)
-	if err := os.WriteFile(configPath, []byte(config), 0644); err != nil {
+	if err := os.WriteFile(configPath, []byte(config), 0o644); err != nil {
 		return fmt.Errorf("failed to write %s: %w", configPath, err)
 	}
 
 	// Shared servers file
 	servers := fmt.Sprintf("127.0.0.1\t%s\n", secret)
-	return os.WriteFile(dir+"/servers", []byte(servers), 0600)
+	return os.WriteFile(dir+"/servers", []byte(servers), 0o600)
 }
 
 // CleanupLegacyPerInboundFiles removes stale per-inbound PPP options and radcli
@@ -154,5 +154,5 @@ ATTRIBUTE	MS-MPPE-Recv-Key	17	string	Microsoft
 ATTRIBUTE	MS-CHAP2-Response	25	string	Microsoft
 ATTRIBUTE	MS-CHAP2-Success	26	string	Microsoft
 `
-	return os.WriteFile(dir+"/dictionary", []byte(dict), 0644)
+	return os.WriteFile(dir+"/dictionary", []byte(dict), 0o644)
 }

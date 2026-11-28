@@ -3461,7 +3461,7 @@ func (s *SubService) ResolveRequest(c *gin.Context) (scheme string, host string,
 	if hostHeader == "" {
 		hostHeader = host
 	}
-	return
+	return scheme, host, hostWithPort, hostHeader
 }
 
 // BuildURLs constructs absolute subscription and JSON subscription URLs for a given subscription ID.

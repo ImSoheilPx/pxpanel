@@ -3,9 +3,9 @@ package vpnout
 import (
 	"strings"
 	"sync"
+	"testing"
 
 	"github.com/ImSoheilPx/pxpanel/internal/vpn/ssh"
-	"testing"
 
 	"github.com/ImSoheilPx/pxpanel/internal/xray"
 

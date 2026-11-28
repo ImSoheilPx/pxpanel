@@ -142,7 +142,7 @@ func (s *Subscriber) formatMessage(e eventbus.Event) (subject, body string) {
 		if data, ok := e.Data.(*eventbus.SystemMetricData); ok {
 			smtpCpu, err := s.settingService.GetSmtpCpu()
 			if err != nil || smtpCpu <= 0 || data.Percent <= float64(smtpCpu) {
-				return
+				return subject, body
 			}
 			subject = host + " " + i18n("tgbot.messages.cpuThreshold",
 				"Percent=="+strconv.FormatFloat(data.Percent, 'f', 2, 64),
@@ -155,7 +155,7 @@ func (s *Subscriber) formatMessage(e eventbus.Event) (subject, body string) {
 		if data, ok := e.Data.(*eventbus.SystemMetricData); ok {
 			smtpMemory, err := s.settingService.GetSmtpMemory()
 			if err != nil || smtpMemory <= 0 || data.Percent <= float64(smtpMemory) {
-				return
+				return subject, body
 			}
 			subject = host + " " + i18n("tgbot.messages.memoryThreshold",
 				"Percent=="+strconv.FormatFloat(data.Percent, 'f', 2, 64),
@@ -190,7 +190,7 @@ func (s *Subscriber) formatMessage(e eventbus.Event) (subject, body string) {
 		}
 	}
 
-	return
+	return subject, body
 }
 
 func hostname() (string, error) {

@@ -27,13 +27,6 @@ import (
 	"go.uber.org/atomic"
 )
 
-// vpnSSHProtocol is the vpn-ui SSH relay's protocol string (the in-binary SSH
-// gateway rows created through the VPN surface). Distinct from every Xray-native
-// protocol; paired-socks handled, never rendered natively. (Kept for the doc
-// reference; the native-render skip now goes through xrayplane.IsRelayProtocol,
-// which covers this string and both mtproto planes.)
-const vpnSSHProtocol = model.Protocol("ssh")
-
 var (
 	lock                sync.Mutex
 	isNeedXrayReconcile atomic.Bool

@@ -201,12 +201,18 @@ func TestInjectPairedInbounds(t *testing.T) {
 		{Id: 1, Protocol: defaults.ProtoL2TP, Tag: "l2tp-a", Enable: true, Settings: `{"clients":[]}`},
 		{Id: 2, Protocol: defaults.ProtoPPTP, Tag: "pptp-a", Enable: false},
 		{Id: 3, Protocol: "vless", Tag: "native-2", Enable: true, Settings: `{"clients":[]}`},
-		{Id: 4, Protocol: defaults.ProtoSSH, Tag: "ssh-a", Enable: true,
-			Settings: `{"clients":[{"id":"u","password":"p","email":"e@x","enable":true}]}`},
-		{Id: 5, Protocol: defaults.ProtoMTProto, Tag: "mt-a", Enable: true,
-			Settings: `{"clients":[{"email":"m@x","secret":"s","adtagEnable":true,"adtag":"7"}]}`},
-		{Id: 6, Protocol: defaults.ProtoMTProto, Tag: "mt-b", Enable: true,
-			Settings: `{"clients":[{"email":"m@x","secret":"s"}]}`},
+		{
+			Id: 4, Protocol: defaults.ProtoSSH, Tag: "ssh-a", Enable: true,
+			Settings: `{"clients":[{"id":"u","password":"p","email":"e@x","enable":true}]}`,
+		},
+		{
+			Id: 5, Protocol: defaults.ProtoMTProto, Tag: "mt-a", Enable: true,
+			Settings: `{"clients":[{"email":"m@x","secret":"s","adtagEnable":true,"adtag":"7"}]}`,
+		},
+		{
+			Id: 6, Protocol: defaults.ProtoMTProto, Tag: "mt-b", Enable: true,
+			Settings: `{"clients":[{"email":"m@x","secret":"s"}]}`,
+		},
 	}
 	InjectPairedInbounds(cfg, inbounds)
 

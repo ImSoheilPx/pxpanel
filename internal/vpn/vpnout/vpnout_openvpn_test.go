@@ -82,7 +82,7 @@ func TestOvpnOutProfileShapes(t *testing.T) {
 	// An absolute credentials file that really is on this box, for the one case where the
 	// driver honours the profile's own auth-user-pass instead of writing its own.
 	realAuth := filepath.Join(t.TempDir(), "creds.txt")
-	if err := os.WriteFile(realAuth, []byte("alice\nhunter2\n"), 0600); err != nil {
+	if err := os.WriteFile(realAuth, []byte("alice\nhunter2\n"), 0o600); err != nil {
 		t.Fatal(err)
 	}
 
@@ -841,14 +841,18 @@ func TestOvpnOutSocksProxyConfig(t *testing.T) {
 		},
 		{
 			name: "host only takes OpenVPN's own default port",
-			st: ovpnOutSettings{Profile: profile, Username: "u", Password: "p",
-				SocksProxy: "127.0.0.1"},
+			st: ovpnOutSettings{
+				Profile: profile, Username: "u", Password: "p",
+				SocksProxy: "127.0.0.1",
+			},
 			want: []string{"socks-proxy 127.0.0.1 1080", "socks-proxy-retry"},
 		},
 		{
 			name: "host and port",
-			st: ovpnOutSettings{Profile: profile, Username: "u", Password: "p",
-				SocksProxy: "127.0.0.1", SocksProxyPort: 10808},
+			st: ovpnOutSettings{
+				Profile: profile, Username: "u", Password: "p",
+				SocksProxy: "127.0.0.1", SocksProxyPort: 10808,
+			},
 			want: []string{"socks-proxy 127.0.0.1 10808", "socks-proxy-retry"},
 		},
 		{
@@ -856,9 +860,11 @@ func TestOvpnOutSocksProxyConfig(t *testing.T) {
 			// file this driver writes beside client.conf, and it is a different file from
 			// the VPN's own auth.txt: the two authenticate to different machines.
 			name: "credentials name their own file",
-			st: ovpnOutSettings{Profile: profile, Username: "u", Password: "p",
+			st: ovpnOutSettings{
+				Profile: profile, Username: "u", Password: "p",
 				SocksProxy: "proxy.example.net", SocksProxyPort: 1080,
-				SocksProxyUser: "pu", SocksProxyPass: "pp"},
+				SocksProxyUser: "pu", SocksProxyPass: "pp",
+			},
 			want: []string{
 				"socks-proxy proxy.example.net 1080 " + ovpnTestDir + "/socks-auth.txt",
 				"auth-user-pass " + ovpnTestDir + "/auth.txt",
@@ -868,8 +874,10 @@ func TestOvpnOutSocksProxyConfig(t *testing.T) {
 			// A password with no username writes no file (Validate refuses that shape), so
 			// the directive must not name one either: OpenVPN would die on a missing file.
 			name: "a username-less proxy names no credentials file",
-			st: ovpnOutSettings{Profile: profile, Username: "u", Password: "p",
-				SocksProxy: "127.0.0.1", SocksProxyPort: 1080, SocksProxyPass: "pp"},
+			st: ovpnOutSettings{
+				Profile: profile, Username: "u", Password: "p",
+				SocksProxy: "127.0.0.1", SocksProxyPort: 1080, SocksProxyPass: "pp",
+			},
 			want:    []string{"socks-proxy 127.0.0.1 1080"},
 			notWant: []string{"socks-proxy 127.0.0.1 1080 " + ovpnTestDir + "/socks-auth.txt"},
 		},
@@ -879,8 +887,10 @@ func TestOvpnOutSocksProxyConfig(t *testing.T) {
 			// to send UDP to 127.0.0.1:47536" then "Initialization Sequence Completed".
 			// Refusing the pair would break the udp half of every provider that ships both.
 			name: "a udp profile is proxied like any other",
-			st: ovpnOutSettings{Profile: "remote 203.0.113.10 1194 udp\n<ca>\nx\n</ca>\n",
-				Username: "u", Password: "p", SocksProxy: "127.0.0.1", SocksProxyPort: 10808},
+			st: ovpnOutSettings{
+				Profile:  "remote 203.0.113.10 1194 udp\n<ca>\nx\n</ca>\n",
+				Username: "u", Password: "p", SocksProxy: "127.0.0.1", SocksProxyPort: 10808,
+			},
 			want: []string{"remote 203.0.113.10 1194 udp", "socks-proxy 127.0.0.1 10808"},
 		},
 		{
@@ -889,8 +899,10 @@ func TestOvpnOutSocksProxyConfig(t *testing.T) {
 			// parse and the LAST one is dialled, so the panel's field wins without the
 			// filter having to be exhaustive.
 			name: "the panel's proxy is written after the profile's",
-			st: ovpnOutSettings{Profile: "remote 203.0.113.10 1194 tcp\nsocks-proxy 10.0.0.9 1080\n",
-				Username: "u", Password: "p", SocksProxy: "127.0.0.1", SocksProxyPort: 10808},
+			st: ovpnOutSettings{
+				Profile:  "remote 203.0.113.10 1194 tcp\nsocks-proxy 10.0.0.9 1080\n",
+				Username: "u", Password: "p", SocksProxy: "127.0.0.1", SocksProxyPort: 10808,
+			},
 			want: []string{"socks-proxy 10.0.0.9 1080", "socks-proxy 127.0.0.1 10808"},
 		},
 	} {
@@ -966,20 +978,33 @@ func TestOvpnOutValidateSocks(t *testing.T) {
 	}{
 		{"nothing set", ovpnOutSettings{}, ""},
 		{"host and port", ovpnOutSettings{SocksProxy: "127.0.0.1", SocksProxyPort: 10808}, ""},
-		{"host, port and credentials", ovpnOutSettings{SocksProxy: "127.0.0.1", SocksProxyPort: 1080,
-			SocksProxyUser: "pu", SocksProxyPass: "pp"}, ""},
+		{"host, port and credentials", ovpnOutSettings{
+			SocksProxy: "127.0.0.1", SocksProxyPort: 1080,
+			SocksProxyUser: "pu", SocksProxyPass: "pp",
+		}, ""},
 		// A udp tunnel through a proxy is a supported combination, so nothing here may
 		// refuse it. This case is the guard on that decision.
 		{"udp with a proxy", ovpnOutSettings{Proto: "udp", SocksProxy: "127.0.0.1", SocksProxyPort: 1080}, ""},
-		{"credentials with no address", ovpnOutSettings{SocksProxyUser: "pu", SocksProxyPass: "pp"},
-			"credentials but no address"},
-		{"a password with no username", ovpnOutSettings{SocksProxy: "127.0.0.1", SocksProxyPass: "pp"},
-			"no username with it"},
+		{
+			"credentials with no address",
+			ovpnOutSettings{SocksProxyUser: "pu", SocksProxyPass: "pp"},
+			"credentials but no address",
+		},
+		{
+			"a password with no username",
+			ovpnOutSettings{SocksProxy: "127.0.0.1", SocksProxyPass: "pp"},
+			"no username with it",
+		},
 		{"host and port in one box", ovpnOutSettings{SocksProxy: "127.0.0.1 10808"}, "whitespace in it"},
-		{"an impossible port", ovpnOutSettings{SocksProxy: "127.0.0.1", SocksProxyPort: 70000},
-			"outside 0-65535"},
-		{"a line break in the proxy password", ovpnOutSettings{SocksProxy: "127.0.0.1",
-			SocksProxyUser: "pu", SocksProxyPass: "p\np"}, "cannot contain line breaks"},
+		{
+			"an impossible port",
+			ovpnOutSettings{SocksProxy: "127.0.0.1", SocksProxyPort: 70000},
+			"outside 0-65535",
+		},
+		{"a line break in the proxy password", ovpnOutSettings{
+			SocksProxy:     "127.0.0.1",
+			SocksProxyUser: "pu", SocksProxyPass: "p\np",
+		}, "cannot contain line breaks"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			st := tc.st

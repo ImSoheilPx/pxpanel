@@ -104,7 +104,7 @@ type l2tpSharedSettings struct {
 // checkL2tpSharedConflicts reports a setting that the incoming l2tp inbound would
 // lose to another enabled l2tp inbound. excludeId skips the row being edited.
 func checkL2tpSharedConflicts(inbound *model.Inbound, excludeId int) error {
-	if inbound == nil || inbound.Protocol != model.Protocol(defaults.ProtoL2TP) || !inbound.Enable {
+	if inbound == nil || inbound.Protocol != defaults.ProtoL2TP || !inbound.Enable {
 		return nil
 	}
 	var mine l2tpSharedSettings
@@ -112,7 +112,7 @@ func checkL2tpSharedConflicts(inbound *model.Inbound, excludeId int) error {
 		return nil // malformed settings fail elsewhere with a better message
 	}
 
-	others, err := enabledInboundsOfProtocol(model.Protocol(defaults.ProtoL2TP), excludeId)
+	others, err := enabledInboundsOfProtocol(defaults.ProtoL2TP, excludeId)
 	if err != nil {
 		return nil // never block a save because the conflict check itself failed
 	}

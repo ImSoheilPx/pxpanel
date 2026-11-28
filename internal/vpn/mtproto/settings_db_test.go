@@ -57,8 +57,10 @@ func TestMtprotoLiftClientSettingsToInbound(t *testing.T) {
 		 "modeTls":true,"tlsDomain":"www.cloudflare.com","adtagEnable":true,
 		 "adtag":"0123456789abcdef0123456789abcdef","userLimit":7}
 	]}`
-	inbound := &model.Inbound{UserId: 1, Tag: "inbound-9443", Port: 9443, Protocol: defaults.ProtoMTProto,
-		Enable: true, Settings: legacy}
+	inbound := &model.Inbound{
+		UserId: 1, Tag: "inbound-9443", Port: 9443, Protocol: defaults.ProtoMTProto,
+		Enable: true, Settings: legacy,
+	}
 	if err := db.Create(inbound).Error; err != nil {
 		t.Fatalf("seed inbound: %v", err)
 	}
@@ -152,8 +154,10 @@ func TestMtprotoLiftEmptyInboundGetsTheFreshDefaults(t *testing.T) {
 	db := vpn.DB()
 	s := &MtprotoService{}
 
-	inbound := &model.Inbound{UserId: 1, Tag: "inbound-9444", Port: 9444, Protocol: defaults.ProtoMTProto,
-		Enable: true, Settings: `{"clients":[]}`}
+	inbound := &model.Inbound{
+		UserId: 1, Tag: "inbound-9444", Port: 9444, Protocol: defaults.ProtoMTProto,
+		Enable: true, Settings: `{"clients":[]}`,
+	}
 	if err := db.Create(inbound).Error; err != nil {
 		t.Fatalf("seed inbound: %v", err)
 	}
@@ -189,8 +193,10 @@ func TestMtprotoLiftKeepsTheLegacySingleDeviceCap(t *testing.T) {
 	db := vpn.DB()
 	s := &MtprotoService{}
 
-	inbound := &model.Inbound{UserId: 1, Tag: "inbound-9445", Port: 9445, Protocol: defaults.ProtoMTProto,
-		Enable: true, Settings: `{"clients":[{"id":"a","email":"a","secret":"00112233445566778899aabbccddeeff","enable":true,"modeSecure":true}]}`}
+	inbound := &model.Inbound{
+		UserId: 1, Tag: "inbound-9445", Port: 9445, Protocol: defaults.ProtoMTProto,
+		Enable: true, Settings: `{"clients":[{"id":"a","email":"a","secret":"00112233445566778899aabbccddeeff","enable":true,"modeSecure":true}]}`,
+	}
 	if err := db.Create(inbound).Error; err != nil {
 		t.Fatalf("seed inbound: %v", err)
 	}
@@ -217,8 +223,10 @@ func TestMtprotoLiftKeepsTheLegacySingleDeviceCap(t *testing.T) {
 // seedMtprotoInbound puts one inbound into a fresh temp database.
 func seedMtprotoInbound(t *testing.T, port int, settings string) *model.Inbound {
 	t.Helper()
-	inbound := &model.Inbound{UserId: 1, Tag: fmt.Sprintf("inbound-%d", port), Port: port,
-		Protocol: defaults.ProtoMTProto, Enable: true, Settings: settings}
+	inbound := &model.Inbound{
+		UserId: 1, Tag: fmt.Sprintf("inbound-%d", port), Port: port,
+		Protocol: defaults.ProtoMTProto, Enable: true, Settings: settings,
+	}
 	if err := vpn.DB().Create(inbound).Error; err != nil {
 		t.Fatalf("seed inbound: %v", err)
 	}

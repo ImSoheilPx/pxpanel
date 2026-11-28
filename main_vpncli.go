@@ -363,7 +363,7 @@ func ctlSend(conn net.Conn, cmd string) (ctlControlResponse, error) {
 		return resp, err
 	}
 	if jerr := json.Unmarshal([]byte(line), &resp); jerr != nil {
-		return resp, fmt.Errorf("malformed reply from the panel: %v", jerr)
+		return resp, fmt.Errorf("malformed reply from the panel: %w", jerr)
 	}
 	return resp, nil
 }

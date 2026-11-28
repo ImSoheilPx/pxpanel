@@ -253,7 +253,7 @@ func TestPrepareBulkDropsUnknownTargets(t *testing.T) {
 		t.Fatalf("targets = %v; want only the account that exists and is theirs", got)
 	}
 	if ticket.DeltaSpent != gb {
-		t.Errorf("DeltaSpent = %d; want %d", ticket.DeltaSpent, int64(gb))
+		t.Errorf("DeltaSpent = %d; want %d", ticket.DeltaSpent, gb)
 	}
 }
 
@@ -717,8 +717,10 @@ func TestRollbackBulkRestoresTheBalanceAndEveryCharge(t *testing.T) {
 func TestRefundDeletedMeasuresConsumptionFromBeforeTheDelete(t *testing.T) {
 	f := newBulkFixture(t, bulkProfile(100*gb, 40*gb),
 		// Charged 10, and 4 of them moved since the charge (base 2, all-time 6).
-		bulkAccount{email: "sold-one", total: 10 * gb, enable: true, allTime: 6 * gb,
-			owned: true, charged: 10 * gb, base: 2 * gb},
+		bulkAccount{
+			email: "sold-one", total: 10 * gb, enable: true, allTime: 6 * gb,
+			owned: true, charged: 10 * gb, base: 2 * gb,
+		},
 		// A second account so the delete below can really take the first one out of
 		// the settings blob: an account still listed on an inbound still has a
 		// membership, is still selling, and must not be refunded.

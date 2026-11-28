@@ -93,8 +93,10 @@ password = "telemt-system"
 
 	t.Run("captures the fields that actually matter", func(t *testing.T) {
 		got := egressConfig(socks)
-		for _, want := range []string{"use_middle_proxy = false", "[[upstreams]]",
-			`type = "socks5"`, `address = "127.0.0.1:12315"`} {
+		for _, want := range []string{
+			"use_middle_proxy = false", "[[upstreams]]",
+			`type = "socks5"`, `address = "127.0.0.1:12315"`,
+		} {
 			if !contains(got, want) {
 				t.Fatalf("egress signature is missing %q; got:\n%s", want, got)
 			}

@@ -56,7 +56,7 @@ func dialSocksConnect(port int, user, destHost string, destPort int) (net.Conn, 
 // returns the still-open TCP control connection (the association lives only while it
 // stays open) and the UDP relay address to send datagrams to.
 func dialSocksUDPAssociate(port int, user string) (net.Conn, *net.UDPAddr, error) {
-	conn, err := net.DialTimeout("tcp", net.JoinHostPort("127.0.0.1", strconv.Itoa(port)), socksDialTimeout)
+	conn, err := (&net.Dialer{Timeout: socksDialTimeout}).DialContext(context.Background(), "tcp", net.JoinHostPort("127.0.0.1", strconv.Itoa(port)))
 	if err != nil {
 		return nil, nil, err
 	}

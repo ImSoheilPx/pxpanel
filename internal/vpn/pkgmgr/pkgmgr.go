@@ -7,6 +7,7 @@
 package pkgmgr
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"os/exec"
@@ -44,7 +45,7 @@ func systemctlActive(unit string) bool {
 	if !commandExists("systemctl") {
 		return false
 	}
-	out, _ := exec.Command("systemctl", "is-active", unit).Output()
+	out, _ := exec.CommandContext(context.Background(), "systemctl", "is-active", unit).Output()
 	return strings.TrimSpace(string(out)) == "active"
 }
 
@@ -134,7 +135,7 @@ func moduleAvailable(name string) bool {
 	if moduleLoaded(name) {
 		return true
 	}
-	return exec.Command("modprobe", "-nq", name).Run() == nil
+	return exec.CommandContext(context.Background(), "modprobe", "-nq", name).Run() == nil
 }
 
 // missingModules filters a module list down to the ones this kernel cannot provide.
@@ -207,7 +208,7 @@ func InstallKernelModules(want []string) (pkg string, stillMissing []string, new
 	// set, not a fresh query, so newly-available modules still get loaded rather than
 	// silently skipped.
 	for _, m := range wasMissing {
-		_ = exec.Command("modprobe", m).Run()
+		_ = exec.CommandContext(context.Background(), "modprobe", m).Run()
 	}
 	stillMissing = missingModules(want)
 
@@ -250,9 +251,11 @@ func detectPackageManager() *packageManager {
 			// Keep existing conffiles on any prompt so an unattended kernel install
 			// (which can touch /etc/default/grub, /etc/kernel-img.conf, …) never
 			// blocks waiting for a "keep or replace?" answer.
-			install: []string{"apt-get", "install", "-y",
+			install: []string{
+				"apt-get", "install", "-y",
 				"-o", "Dpkg::Options::=--force-confold",
-				"-o", "Dpkg::Options::=--force-confdef"},
+				"-o", "Dpkg::Options::=--force-confdef",
+			},
 		}
 	case commandExists("dnf"):
 		return &packageManager{name: "dnf", install: []string{"dnf", "install", "-y"}}
@@ -300,20 +303,20 @@ func (pm *packageManager) installPackage(pkg string) (string, error) {
 
 	var log strings.Builder
 	if len(pm.refresh) > 0 {
-		refresh := exec.Command(pm.refresh[0], pm.refresh[1:]...)
+		refresh := exec.CommandContext(context.Background(), pm.refresh[0], pm.refresh[1:]...)
 		refresh.Env = append(os.Environ(), pm.env...)
 		rout, _ := refresh.CombinedOutput()
 		log.WriteString("$ " + strings.Join(pm.refresh, " ") + "\n")
 		log.Write(rout)
 	}
 	args := append(append([]string{}, pm.install[1:]...), pkg)
-	cmd := exec.Command(pm.install[0], args...)
+	cmd := exec.CommandContext(context.Background(), pm.install[0], args...)
 	cmd.Env = append(os.Environ(), pm.env...)
 	out, err := cmd.CombinedOutput()
 	log.WriteString("\n$ " + pm.install[0] + " " + strings.Join(args, " ") + "\n")
 	log.Write(out)
 	if err != nil {
-		return log.String(), fmt.Errorf("%v: %s", err, lastNonEmptyLine(string(out)))
+		return log.String(), fmt.Errorf("%w: %s", err, lastNonEmptyLine(string(out)))
 	}
 	return log.String(), nil
 }
@@ -334,7 +337,7 @@ func (pm *packageManager) packageInstalled(pkg string) bool {
 	case "apt":
 		// dpkg-query exits non-zero for an unknown package, and prints the state for
 		// a known one; "install ok installed" is the only state that counts.
-		out, err := exec.Command("dpkg-query", "-W", "-f=${Status}", pkg).Output()
+		out, err := exec.CommandContext(context.Background(), "dpkg-query", "-W", "-f=${Status}", pkg).Output()
 		return err == nil && strings.Contains(string(out), "install ok installed")
 	case "dnf", "yum":
 		query = []string{"rpm", "-q", pkg}
@@ -350,7 +353,7 @@ func (pm *packageManager) packageInstalled(pkg string) bool {
 	if !commandExists(query[0]) {
 		return false
 	}
-	out, err := exec.Command(query[0], query[1:]...).Output()
+	out, err := exec.CommandContext(context.Background(), query[0], query[1:]...).Output()
 	if pm.name == "apk" {
 		// `apk info -e` exits 0 either way and prints the name only when installed.
 		return err == nil && strings.TrimSpace(string(out)) != ""
@@ -428,8 +431,10 @@ func EnsureLibreswan() ProvisionStep {
 	if !commandExists("ipsec") {
 		pm := detectPackageManager()
 		if pm == nil {
-			return ProvisionStep{Name: "libreswan (IPsec)", OK: false,
-				Msg: "no supported package manager found — install 'libreswan' manually"}
+			return ProvisionStep{
+				Name: "libreswan (IPsec)", OK: false,
+				Msg: "no supported package manager found — install 'libreswan' manually",
+			}
 		}
 		out, err := pm.installPackage("libreswan")
 		log.WriteString(out)
@@ -451,8 +456,10 @@ func EnsureLibreswan() ProvisionStep {
 			return ProvisionStep{Name: "libreswan via " + pm.name, OK: true, Warn: true, Msg: msg, Log: log.String()}
 		}
 		if !commandExists("ipsec") {
-			return ProvisionStep{Name: "libreswan via " + pm.name, OK: true, Warn: true,
-				Msg: withHint("libreswan install ran but 'ipsec' still not found — L2TP/IPsec unavailable", pm.hint), Log: log.String()}
+			return ProvisionStep{
+				Name: "libreswan via " + pm.name, OK: true, Warn: true,
+				Msg: withHint("libreswan install ran but 'ipsec' still not found — L2TP/IPsec unavailable", pm.hint), Log: log.String(),
+			}
 		}
 	}
 	// Fresh installs (notably Ubuntu 24/26 + Libreswan 5.x) ship the NSS database
@@ -469,8 +476,10 @@ func EnsureLibreswan() ProvisionStep {
 		return ProvisionStep{Name: "libreswan (IPsec)", OK: true, Msg: "installed; NSS initialized; ipsec running", Log: log.String()}
 	}
 	log.WriteString(ipsecFailureDiagnostics())
-	return ProvisionStep{Name: "libreswan (IPsec)", OK: true, Warn: true,
-		Msg: "installed; NSS initialized; ipsec not yet active (check `systemctl status ipsec`)", Log: log.String()}
+	return ProvisionStep{
+		Name: "libreswan (IPsec)", OK: true, Warn: true,
+		Msg: "installed; NSS initialized; ipsec not yet active (check `systemctl status ipsec`)", Log: log.String(),
+	}
 }
 
 // installLibreswanFromAUR installs libreswan through an AUR helper on Arch, where
@@ -484,7 +493,7 @@ func installLibreswanFromAUR() (string, error) {
 			continue
 		}
 		args := []string{"-S", "--needed", "--noconfirm", "libreswan"}
-		out, err := exec.Command(helper, args...).CombinedOutput()
+		out, err := exec.CommandContext(context.Background(), helper, args...).CombinedOutput()
 		b.WriteString("\n$ " + helper + " " + strings.Join(args, " ") + "\n")
 		b.Write(out)
 		if err == nil && commandExists("ipsec") {
@@ -502,7 +511,7 @@ func InitIpsecNSS() (string, error) {
 	if !commandExists("ipsec") {
 		return "", nil
 	}
-	out, err := exec.Command("ipsec", "checknss").CombinedOutput()
+	out, err := exec.CommandContext(context.Background(), "ipsec", "checknss").CombinedOutput()
 	return string(out), err
 }
 
@@ -517,10 +526,10 @@ func startIpsecService() string {
 		return "\n$ start bundled pluto\nok"
 	}
 	if commandExists("systemctl") {
-		out, _ := exec.Command("systemctl", "enable", "--now", "ipsec").CombinedOutput()
+		out, _ := exec.CommandContext(context.Background(), "systemctl", "enable", "--now", "ipsec").CombinedOutput()
 		return "\n$ systemctl enable --now ipsec\n" + string(out)
 	}
-	out, _ := exec.Command("ipsec", "start").CombinedOutput()
+	out, _ := exec.CommandContext(context.Background(), "ipsec", "start").CombinedOutput()
 	return "\n$ ipsec start\n" + string(out)
 }
 
@@ -542,10 +551,10 @@ func RestartIpsecService() (string, error) {
 		return "\n$ restart bundled pluto\n", err
 	}
 	if commandExists("systemctl") {
-		out, err := exec.Command("systemctl", "restart", "ipsec").CombinedOutput()
+		out, err := exec.CommandContext(context.Background(), "systemctl", "restart", "ipsec").CombinedOutput()
 		return "\n$ systemctl restart ipsec\n" + string(out), err
 	}
-	out, err := exec.Command("ipsec", "restart").CombinedOutput()
+	out, err := exec.CommandContext(context.Background(), "ipsec", "restart").CombinedOutput()
 	return "\n$ ipsec restart\n" + string(out), err
 }
 
@@ -564,9 +573,9 @@ func StopIpsecService() error {
 		return IpsecHooks.StopBundledPluto()
 	}
 	if commandExists("systemctl") {
-		return exec.Command("systemctl", "stop", "ipsec").Run()
+		return exec.CommandContext(context.Background(), "systemctl", "stop", "ipsec").Run()
 	}
-	return exec.Command("ipsec", "stop").Run()
+	return exec.CommandContext(context.Background(), "ipsec", "stop").Run()
 }
 
 // ipsecFailureDiagnostics captures why ipsec.service didn't come up, so the setup
@@ -580,9 +589,9 @@ func ipsecFailureDiagnostics() string {
 		return ""
 	}
 	var b strings.Builder
-	out, _ := exec.Command("systemctl", "status", "ipsec", "--no-pager", "-l").CombinedOutput()
+	out, _ := exec.CommandContext(context.Background(), "systemctl", "status", "ipsec", "--no-pager", "-l").CombinedOutput()
 	b.WriteString("\n$ systemctl status ipsec\n" + string(out))
-	if jout, _ := exec.Command("journalctl", "-u", "ipsec", "--no-pager", "-n", "30").CombinedOutput(); len(jout) > 0 {
+	if jout, _ := exec.CommandContext(context.Background(), "journalctl", "-u", "ipsec", "--no-pager", "-n", "30").CombinedOutput(); len(jout) > 0 {
 		b.WriteString("\n$ journalctl -u ipsec -n 30\n" + string(jout))
 	}
 	return b.String()
@@ -597,7 +606,7 @@ func LibreswanVersion() (major, minor int, ok bool) {
 	if !commandExists("ipsec") {
 		return 0, 0, false
 	}
-	out, _ := exec.Command("ipsec", "--version").CombinedOutput()
+	out, _ := exec.CommandContext(context.Background(), "ipsec", "--version").CombinedOutput()
 	m := libreswanVersionRe.FindStringSubmatch(string(out))
 	if m == nil {
 		return 0, 0, false
@@ -625,21 +634,27 @@ func EnsureCommand(display, cmd string, pkgFn func() string) ProvisionStep {
 	}
 	pkg := pkgFn()
 	if pkg == "" {
-		return ProvisionStep{Name: display, OK: false,
-			Msg: "'" + cmd + "' missing and no package known for this distro — install it manually"}
+		return ProvisionStep{
+			Name: display, OK: false,
+			Msg: "'" + cmd + "' missing and no package known for this distro — install it manually",
+		}
 	}
 	pm := detectPackageManager()
 	if pm == nil {
-		return ProvisionStep{Name: display, OK: false,
-			Msg: "'" + cmd + "' missing and no supported package manager — install '" + pkg + "' manually"}
+		return ProvisionStep{
+			Name: display, OK: false,
+			Msg: "'" + cmd + "' missing and no supported package manager — install '" + pkg + "' manually",
+		}
 	}
 	out, err := pm.installPackage(pkg)
 	if err != nil {
 		return ProvisionStep{Name: display + " via " + pm.name, OK: false, Msg: err.Error(), Log: out}
 	}
 	if !commandExists(cmd) {
-		return ProvisionStep{Name: display + " via " + pm.name, OK: false,
-			Msg: "installed " + pkg + " but '" + cmd + "' still not found", Log: out}
+		return ProvisionStep{
+			Name: display + " via " + pm.name, OK: false,
+			Msg: "installed " + pkg + " but '" + cmd + "' still not found", Log: out,
+		}
 	}
 	return ProvisionStep{Name: display + " via " + pm.name, OK: true, Msg: "installed " + pkg, Log: out}
 }
@@ -658,7 +673,7 @@ func vpnModuleEnableSet() map[string]bool {
 		// `modprobe --show-depends` prints one `insmod <path>/<dep>.ko[.xz]` line per
 		// module in load order (deps first). Extract each dep's bare module name.
 		// (Fails harmlessly for a module the kernel dropped, e.g. af_key on RHEL 10+.)
-		out, err := exec.Command("modprobe", "--show-depends", m).CombinedOutput()
+		out, err := exec.CommandContext(context.Background(), "modprobe", "--show-depends", m).CombinedOutput()
 		if err != nil {
 			continue
 		}
@@ -759,7 +774,7 @@ func UnblacklistVpnModules() (cleared []string, logStr string) {
 			// so uninstall can restore their deny-list rather than leave it commented out
 			// forever. The /usr case writes a new file to /etc, which is ours outright.
 			manifest.PrepareHostFile(target, "")
-			if err := os.WriteFile(target, []byte(strings.Join(lines, "\n")), 0644); err != nil {
+			if err := os.WriteFile(target, []byte(strings.Join(lines, "\n")), 0o644); err != nil {
 				b.WriteString("failed to write " + target + ": " + err.Error() + "\n")
 				continue
 			}

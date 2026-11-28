@@ -3,8 +3,6 @@ package vpnout
 import (
 	"errors"
 	"fmt"
-	"github.com/ImSoheilPx/pxpanel/internal/vpn/ipsec"
-	"github.com/ImSoheilPx/pxpanel/internal/vpn/procmgr"
 	"hash/fnv"
 	"net"
 	"os"
@@ -13,6 +11,9 @@ import (
 	"runtime"
 	"strings"
 	"time"
+
+	"github.com/ImSoheilPx/pxpanel/internal/vpn/ipsec"
+	"github.com/ImSoheilPx/pxpanel/internal/vpn/procmgr"
 
 	"github.com/goccy/go-json"
 	"github.com/vishvananda/netlink"
@@ -305,7 +306,7 @@ func (d *ikev2OutDriver) Up(cfg VpnOutboundConfig) (string, error) {
 			return "", fmt.Errorf("write the shared charon config: %w", err)
 		}
 	}
-	_ = os.MkdirAll(swanctlConfDir, 0755)
+	_ = os.MkdirAll(swanctlConfDir, 0o755)
 	if err := d.writeCreds(name, s); err != nil {
 		return "", err
 	}
@@ -708,17 +709,17 @@ func (d *ikev2OutDriver) credentials(s *ikev2OutSettings) (cert, key, ca []byte)
 // reads its own directories, so a bare path to the operator's file is never loaded. The
 // inbound side learned the same thing the hard way (see writeCertFiles in ikev2.go).
 func (d *ikev2OutDriver) writeCreds(name string, s *ikev2OutSettings) error {
-	_ = os.MkdirAll(swanctlX509, 0755)
-	_ = os.MkdirAll(swanctlX509CA, 0755)
-	_ = os.MkdirAll(swanctlPrivate, 0700)
+	_ = os.MkdirAll(swanctlX509, 0o755)
+	_ = os.MkdirAll(swanctlX509CA, 0o755)
+	_ = os.MkdirAll(swanctlPrivate, 0o700)
 	base := ikev2OutCredBase(name)
 	cert, key, ca := d.credentials(s)
 
 	if s.AuthMode == "cert" && len(cert) > 0 && len(key) > 0 {
-		if err := os.WriteFile(swanctlX509+"/"+base+"-client.pem", cert, 0644); err != nil {
+		if err := os.WriteFile(swanctlX509+"/"+base+"-client.pem", cert, 0o644); err != nil {
 			return err
 		}
-		if err := os.WriteFile(swanctlPrivate+"/"+base+"-client.key", key, 0600); err != nil {
+		if err := os.WriteFile(swanctlPrivate+"/"+base+"-client.key", key, 0o600); err != nil {
 			return err
 		}
 	} else {
@@ -728,7 +729,7 @@ func (d *ikev2OutDriver) writeCreds(name string, s *ikev2OutSettings) error {
 
 	caPath := swanctlX509CA + "/" + base + "-ca.pem"
 	if len(ca) > 0 {
-		return os.WriteFile(caPath, ca, 0644)
+		return os.WriteFile(caPath, ca, 0o644)
 	}
 	_ = os.Remove(caPath)
 	if s.AuthMode != "psk" {
@@ -754,7 +755,7 @@ func (d *ikev2OutDriver) removeCreds(name string) {
 func (d *ikev2OutDriver) writeConnConf(name, iface string, ifID uint32, s *ikev2OutSettings, carried bool) error {
 	// 0600: the file holds the account's password or the pre-shared key.
 	return os.WriteFile(ikev2OutConnFile(name),
-		[]byte(ikev2OutBuildConnConf(name, iface, ifID, s, carried)), 0600)
+		[]byte(ikev2OutBuildConnConf(name, iface, ifID, s, carried)), 0o600)
 }
 
 // ikev2OutBuildConnConf renders that connection file.

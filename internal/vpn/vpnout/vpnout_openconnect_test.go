@@ -394,12 +394,20 @@ func TestOcOutValidateProxy(t *testing.T) {
 	}{
 		{"nothing set", ocOutSettings{}, ""},
 		{"host alone", ocOutSettings{Proxy: "10.0.0.9"}, ""},
-		{"host, scheme, port and credentials", ocOutSettings{ProxyType: "http", Proxy: "10.0.0.9",
-			ProxyPort: 3128, ProxyUser: "pu", ProxyPass: "pp"}, ""},
-		{"credentials with no address", ocOutSettings{ProxyUser: "pu", ProxyPass: "pp"},
-			"credentials but no address"},
-		{"a password with no username", ocOutSettings{Proxy: "10.0.0.9", ProxyPass: "pp"},
-			"no username with it"},
+		{"host, scheme, port and credentials", ocOutSettings{
+			ProxyType: "http", Proxy: "10.0.0.9",
+			ProxyPort: 3128, ProxyUser: "pu", ProxyPass: "pp",
+		}, ""},
+		{
+			"credentials with no address",
+			ocOutSettings{ProxyUser: "pu", ProxyPass: "pp"},
+			"credentials but no address",
+		},
+		{
+			"a password with no username",
+			ocOutSettings{Proxy: "10.0.0.9", ProxyPass: "pp"},
+			"no username with it",
+		},
 		{"host and port in one box", ocOutSettings{Proxy: "10.0.0.9 1080"}, "whitespace in it"},
 		// A scheme typed into the host box would become socks5://http://host, which
 		// openconnect resolves as a host called "http".
@@ -408,8 +416,10 @@ func TestOcOutValidateProxy(t *testing.T) {
 		// it: "Only http or socks(5) proxies supported", at startup.
 		{"socks4", ocOutSettings{ProxyType: "socks4", Proxy: "10.0.0.9"}, "socks4 in particular"},
 		{"an impossible port", ocOutSettings{Proxy: "10.0.0.9", ProxyPort: 70000}, "outside 0-65535"},
-		{"a line break in the proxy password", ocOutSettings{Proxy: "10.0.0.9",
-			ProxyUser: "pu", ProxyPass: "p\np"}, "cannot contain line breaks"},
+		{"a line break in the proxy password", ocOutSettings{
+			Proxy:     "10.0.0.9",
+			ProxyUser: "pu", ProxyPass: "p\np",
+		}, "cannot contain line breaks"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			st := tc.st
@@ -449,11 +459,15 @@ func TestOcOutLogTellNamesTheProxy(t *testing.T) {
 	for _, tc := range []struct{ name, log, want string }{
 		{"a scheme the client refuses", "Only http or socks(5) proxies supported\n", "http and socks5 only"},
 		{"a refused CONNECT", "Proxy CONNECT request failed: 403\n", "HTTP proxy refused"},
-		{"basic disabled", "Proxy requested Basic authentication which is disabled by default\n",
-			"proxy-auth"},
+		{
+			"basic disabled", "Proxy requested Basic authentication which is disabled by default\n",
+			"proxy-auth",
+		},
 		{"a socks refusal", "SOCKS proxy error 02: connection not allowed\n", "SOCKS proxy refused"},
-		{"socks wants credentials", "SOCKS server requested username/password but we have none\n",
-			"proxy username and password"},
+		{
+			"socks wants credentials", "SOCKS server requested username/password but we have none\n",
+			"proxy username and password",
+		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			// The gateway-side tail every one of these really ends with, so the test also
@@ -514,8 +528,10 @@ func TestSstpOutProxyIsHttpOnly(t *testing.T) {
 // leaving "Could not connect to proxy server" to be read as a dead proxy.
 func TestSstpOutProxyReachesThePtyCommand(t *testing.T) {
 	d := &sstpOutDriver{}
-	s := &sstpOutSettings{Server: "vpn.example.com", Username: "u", Password: "p",
-		Proxy: "http://pu:pp@10.0.0.1:3128"}
+	s := &sstpOutSettings{
+		Server: "vpn.example.com", Username: "u", Password: "p",
+		Proxy: "http://pu:pp@10.0.0.1:3128",
+	}
 	got := d.ptyCommand("/usr/bin/sstpc", "vpn1", "/etc/vpn-ui-sstp-out/vpn1/ca.pem", s)
 	if !strings.Contains(got, "--proxy 'http://pu:pp@10.0.0.1:3128'") {
 		t.Fatalf("the proxy is not passed to sstpc: %s", got)
@@ -549,8 +565,10 @@ func TestSstpOutProxyReachesThePtyCommand(t *testing.T) {
 func TestSstpOutLogTellNamesTheProxy(t *testing.T) {
 	for _, tc := range []struct{ name, log, want string }{
 		{"proxy unreachable", "Could not connect to proxy server\n", "HTTP CONNECT proxy"},
-		{"proxy wants credentials", "Proxy asked for credentials, none provided\n",
-			"http://user:password@host:port"},
+		{
+			"proxy wants credentials", "Proxy asked for credentials, none provided\n",
+			"http://user:password@host:port",
+		},
 		{"unreadable url", "Could not parse the proxy URL\n", "http://host:port"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {

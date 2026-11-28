@@ -2,15 +2,15 @@ package vpnout
 
 import (
 	"encoding/json"
-	"fmt"
-
 	"errors"
-	"github.com/ImSoheilPx/pxpanel/internal/util/json_util"
-	logger "github.com/ImSoheilPx/pxpanel/internal/vpn/log"
-	"github.com/ImSoheilPx/pxpanel/internal/vpn/ssh"
+	"fmt"
 	"net"
 	"strings"
 	"testing"
+
+	"github.com/ImSoheilPx/pxpanel/internal/util/json_util"
+	logger "github.com/ImSoheilPx/pxpanel/internal/vpn/log"
+	"github.com/ImSoheilPx/pxpanel/internal/vpn/ssh"
 
 	"github.com/ImSoheilPx/pxpanel/internal/xray"
 )
@@ -741,7 +741,8 @@ func TestVpnOutNotTestable(t *testing.T) {
 // makes, in the same order and on the same lists, so a change to either
 // synthesis reaches these tests automatically.
 func createTestConfig(outboundTag string, allOutbounds []any, testPort int,
-	tunnels []VpnOutboundConfig, sshTunnels []ssh.SshOutboundConfig) *xray.Config {
+	tunnels []VpnOutboundConfig, sshTunnels []ssh.SshOutboundConfig,
+) *xray.Config {
 	// Test inbound (SOCKS proxy) - only addition to inbounds
 	testInbound := xray.InboundConfig{
 		Tag:      "test-inbound",

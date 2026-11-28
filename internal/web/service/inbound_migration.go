@@ -54,16 +54,16 @@ func (s *InboundService) MigrationRequirements() (err error) {
 
 	if tx.Migrator().HasColumn(&model.Inbound{}, "all_time") {
 		if err = tx.Migrator().DropColumn(&model.Inbound{}, "all_time"); err != nil {
-			return
+			return err
 		}
 	}
 	if tx.Migrator().HasColumn(&xray.ClientTraffic{}, "all_time") {
 		if err = tx.Migrator().DropColumn(&xray.ClientTraffic{}, "all_time"); err != nil {
-			return
+			return err
 		}
 	}
 	if err = normalizeInboundShareAddressColumns(tx); err != nil {
-		return
+		return err
 	}
 
 	// Normalize "enable" columns to boolean on Postgres. Legacy SQLite data
@@ -94,7 +94,7 @@ func (s *InboundService) MigrationRequirements() (err error) {
 		}
 		for _, column := range [][2]string{{"inbounds", "enable"}, {"client_traffics", "enable"}, {"nodes", "enable"}, {"clients", "enable"}, {"api_tokens", "enabled"}, {"outbound_subscriptions", "enabled"}} {
 			if err = normalizeBool(column[0], column[1]); err != nil {
-				return
+				return err
 			}
 		}
 	}
@@ -103,7 +103,7 @@ func (s *InboundService) MigrationRequirements() (err error) {
 	var inbounds []*model.Inbound
 	err = tx.Model(model.Inbound{}).Where("protocol IN (?)", []string{"vmess", "vless", "trojan", "shadowsocks", "hysteria"}).Find(&inbounds).Error
 	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
-		return
+		return err
 	}
 	for inbound_index := range inbounds {
 		settings := map[string]any{}
@@ -164,7 +164,7 @@ func (s *InboundService) MigrationRequirements() (err error) {
 			var modifiedSettings []byte
 			modifiedSettings, err = json.MarshalIndent(settings, "", "  ")
 			if err != nil {
-				return
+				return err
 			}
 
 			inbounds[inbound_index].Settings = string(modifiedSettings)
@@ -174,17 +174,17 @@ func (s *InboundService) MigrationRequirements() (err error) {
 		var modelClients []model.Client
 		modelClients, err = s.GetClients(inbounds[inbound_index])
 		if err != nil {
-			return
+			return err
 		}
 		for _, modelClient := range modelClients {
 			if len(modelClient.Email) > 0 {
 				var count int64
 				if err = tx.Model(xray.ClientTraffic{}).Where("email = ?", modelClient.Email).Count(&count).Error; err != nil {
-					return
+					return err
 				}
 				if count == 0 {
 					if err = s.AddClientStat(tx, inbounds[inbound_index].Id, &modelClient); err != nil {
-						return
+						return err
 					}
 				}
 			}
@@ -193,16 +193,16 @@ func (s *InboundService) MigrationRequirements() (err error) {
 		// Heal clients table for installs where the one-shot seeder
 		// skipped clients due to a tgId-string unmarshal error.
 		if err = s.clientService.SyncInbound(tx, inbounds[inbound_index].Id, modelClients); err != nil {
-			return
+			return err
 		}
 	}
 	if err = saveInChunks(tx, inbounds); err != nil {
-		return
+		return err
 	}
 
 	// Remove orphaned traffics
 	if err = tx.Where("inbound_id = 0").Delete(xray.ClientTraffic{}).Error; err != nil {
-		return
+		return err
 	}
 
 	// Migrate old MultiDomain to External Proxy
@@ -225,7 +225,7 @@ func (s *InboundService) MigrationRequirements() (err error) {
 	}
 	err = tx.Raw(externalProxyQuery).Scan(&externalProxy).Error
 	if err != nil || len(externalProxy) == 0 {
-		return
+		return err
 	}
 
 	for _, ep := range externalProxy {
@@ -252,10 +252,10 @@ func (s *InboundService) MigrationRequirements() (err error) {
 		newStream, marshalErr := json.MarshalIndent(stream, " ", "  ")
 		if marshalErr != nil {
 			err = marshalErr
-			return
+			return err
 		}
 		if err = tx.Model(model.Inbound{}).Where("id = ?", ep.Id).Update("stream_settings", newStream).Error; err != nil {
-			return
+			return err
 		}
 	}
 
@@ -281,7 +281,7 @@ func (s *InboundService) MigrationRequirements() (err error) {
 	}
 	err = tx.Exec(tagCleanup).Error
 	if err != nil {
-		return
+		return err
 	}
 	return err
 }

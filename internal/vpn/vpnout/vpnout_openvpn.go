@@ -712,8 +712,10 @@ func ovpnOutBuildConfig(st *ovpnOutSettings, iface, dir string) (string, error) 
 		// "Options error: option 'dhcp-option' cannot be used in this context ([PUSH-OPTIONS])"
 		// on every successful connect. Filtering it drops it silently, so the log of a healthy
 		// tunnel has no error line in it.
-		for _, opt := range []string{"redirect-gateway", "redirect-private", "route", "route-ipv6",
-			"block-outside-dns", "block-ipv6", "dhcp-option"} {
+		for _, opt := range []string{
+			"redirect-gateway", "redirect-private", "route", "route-ipv6",
+			"block-outside-dns", "block-ipv6", "dhcp-option",
+		} {
 			b.WriteString(fmt.Sprintf("pull-filter ignore \"%s\"\n", opt))
 		}
 	}
@@ -1036,18 +1038,18 @@ func (ovpnOutDriver) Up(cfg VpnOutboundConfig) (string, error) {
 	// it here, before the child exists, makes that impossible.
 	migrateFromSystemd()
 
-	if err := os.MkdirAll(dir, 0700); err != nil {
+	if err := os.MkdirAll(dir, 0o700); err != nil {
 		return "", err
 	}
 	if auth != "" {
-		if err := os.WriteFile(ovpnOutAuthPath(dir), []byte(auth), 0600); err != nil {
+		if err := os.WriteFile(ovpnOutAuthPath(dir), []byte(auth), 0o600); err != nil {
 			return "", err
 		}
 	} else {
 		_ = os.Remove(ovpnOutAuthPath(dir))
 	}
 	if socksAuth != "" {
-		if err := os.WriteFile(ovpnOutSocksAuthPath(dir), []byte(socksAuth), 0600); err != nil {
+		if err := os.WriteFile(ovpnOutSocksAuthPath(dir), []byte(socksAuth), 0o600); err != nil {
 			return "", err
 		}
 	} else {
@@ -1055,7 +1057,7 @@ func (ovpnOutDriver) Up(cfg VpnOutboundConfig) (string, error) {
 	}
 	// 0600: the config can carry an inline private key, and on the discrete path it always
 	// does.
-	if err := os.WriteFile(ovpnOutConfPath(dir), []byte(conf), 0600); err != nil {
+	if err := os.WriteFile(ovpnOutConfPath(dir), []byte(conf), 0o600); err != nil {
 		return "", err
 	}
 

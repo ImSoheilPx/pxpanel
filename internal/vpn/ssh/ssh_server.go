@@ -381,10 +381,16 @@ func copyCount(dst io.Writer, src io.Reader, ctr *atomic.Int64) {
 	for {
 		n, rerr := src.Read(buf)
 		if n > 0 {
+			// Count BEFORE the downstream write, not after: the reply to these
+			// bytes can outrun this goroutine's next instruction (observed as a
+			// zero up-count under -race parallel load), and a reader that swaps
+			// the counters in that window would drop the chunk. If the write
+			// then fails, the bytes never left, so take them back.
+			ctr.Add(int64(n))
 			if _, werr := dst.Write(buf[:n]); werr != nil {
+				ctr.Add(-int64(n))
 				return
 			}
-			ctr.Add(int64(n))
 		}
 		if rerr != nil {
 			return

@@ -341,7 +341,7 @@ func (s *SettingService) GetAllSetting() (*entity.AllSetting, error) {
 		default:
 			return common.NewErrorf("unknown field %v type %v", key, t)
 		}
-		return
+		return err
 	}
 
 	keyMap := map[string]bool{}

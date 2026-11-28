@@ -311,8 +311,8 @@ func (d *awgOutDriver) Up(cfg VpnOutboundConfig) (string, error) {
 // wgOutDriver.configure; the obfuscation is folded into the same write because the
 // module takes it as device-level config alongside the private key.
 func (d *awgOutDriver) configure(cl *wgctrl.Client, iface string, priv, peerPub wgtypes.Key,
-	psk *wgtypes.Key, endpoint *net.UDPAddr, keepalive time.Duration, obfs awgObfs, withV6 bool) error {
-
+	psk *wgtypes.Key, endpoint *net.UDPAddr, keepalive time.Duration, obfs awgObfs, withV6 bool,
+) error {
 	dev, derr := cl.Device(iface)
 	var cur *wgtypes.Peer
 	if derr == nil && dev != nil {

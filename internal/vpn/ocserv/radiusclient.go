@@ -81,5 +81,5 @@ ATTRIBUTE	MS-MPPE-Recv-Key	17	string	Microsoft
 ATTRIBUTE	MS-CHAP2-Response	25	string	Microsoft
 ATTRIBUTE	MS-CHAP2-Success	26	string	Microsoft
 `
-	return os.WriteFile(dir+"/dictionary", []byte(dict), 0644)
+	return os.WriteFile(dir+"/dictionary", []byte(dict), 0o644)
 }

@@ -120,16 +120,20 @@ func EnsureBundledLibreswan() pkgmgr.ProvisionStep {
 	out, err := exec.CommandContext(context.Background(), bundledIpsecPath(), "checknss").CombinedOutput()
 	logb.WriteString(string(out))
 	if err != nil {
-		return pkgmgr.ProvisionStep{Name: "libreswan (bundled IPsec)", OK: true, Warn: true,
-			Msg: "bundled libreswan extracted; NSS init reported: " + err.Error(), Log: logb.String()}
+		return pkgmgr.ProvisionStep{
+			Name: "libreswan (bundled IPsec)", OK: true, Warn: true,
+			Msg: "bundled libreswan extracted; NSS init reported: " + err.Error(), Log: logb.String(),
+		}
 	}
 	ver := ""
 	if maj, min, ok := pkgmgr.LibreswanVersion(); ok {
 		ver = fmt.Sprintf(" %d.%d", maj, min)
 	}
-	return pkgmgr.ProvisionStep{Name: "libreswan (bundled IPsec)", OK: true,
+	return pkgmgr.ProvisionStep{
+		Name: "libreswan (bundled IPsec)", OK: true,
 		Msg: "bundled libreswan" + ver + " ready — ALL_ALGS build (MODP1024 for legacy L2TP clients)",
-		Log: logb.String()}
+		Log: logb.String(),
+	}
 }
 
 // StartBundledPluto (re)launches the bundled pluto as a panel-managed child and

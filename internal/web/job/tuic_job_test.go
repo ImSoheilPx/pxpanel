@@ -38,7 +38,7 @@ func generateTestCertForJob(t *testing.T) (certPEM, keyPEM []byte) {
 	}
 	certPEM = pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: der})
 	keyPEM = pem.EncodeToMemory(&pem.Block{Type: "RSA PRIVATE KEY", Bytes: x509.MarshalPKCS1PrivateKey(priv)})
-	return
+	return certPEM, keyPEM
 }
 
 func TestTuicJob_TrafficAccounting(t *testing.T) {

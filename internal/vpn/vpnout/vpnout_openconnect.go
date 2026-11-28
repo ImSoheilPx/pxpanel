@@ -186,8 +186,10 @@ func ocOutProxyDefaultPort(scheme string) int {
 
 type ocOutDriver struct{}
 
-var _ VpnOutSecrets = (*ocOutDriver)(nil)
-var _ VpnOutServer = (*ocOutDriver)(nil)
+var (
+	_ VpnOutSecrets = (*ocOutDriver)(nil)
+	_ VpnOutServer  = (*ocOutDriver)(nil)
+)
 
 func init() { RegisterVpnOutDriver(VpnOutOpenConnect, &ocOutDriver{}) }
 
@@ -726,16 +728,16 @@ func ocOutPinSelfSigned(pemText string) string {
 // guard and the launcher.
 func (d *ocOutDriver) writeFiles(dir, bin, script, iface string, s *ocOutSettings) error {
 	// 0700, because the directory holds the password and the client private key.
-	if err := os.MkdirAll(dir, 0700); err != nil {
+	if err := os.MkdirAll(dir, 0o700); err != nil {
 		return err
 	}
-	if err := ocOutWritePem(ocOutCaFile(dir), s.CaCert, 0644); err != nil {
+	if err := ocOutWritePem(ocOutCaFile(dir), s.CaCert, 0o644); err != nil {
 		return err
 	}
-	if err := ocOutWritePem(ocOutCertFile(dir), s.Cert, 0644); err != nil {
+	if err := ocOutWritePem(ocOutCertFile(dir), s.Cert, 0o644); err != nil {
 		return err
 	}
-	if err := ocOutWritePem(ocOutKeyFile(dir), s.Key, 0600); err != nil {
+	if err := ocOutWritePem(ocOutKeyFile(dir), s.Key, 0o600); err != nil {
 		return err
 	}
 	if err := d.writeGuard(dir, script); err != nil {
@@ -752,7 +754,7 @@ func (d *ocOutDriver) writeFiles(dir, bin, script, iface string, s *ocOutSetting
 	if s.Password != "" {
 		pass = s.Password + "\n"
 	}
-	if err := os.WriteFile(ocOutPassFile(dir), []byte(pass), 0600); err != nil {
+	if err := os.WriteFile(ocOutPassFile(dir), []byte(pass), 0o600); err != nil {
 		return err
 	}
 	return d.writeLauncher(dir, bin, s)
@@ -778,7 +780,7 @@ func ocOutWritePem(path, pem string, mode os.FileMode) error {
 // 0600: the file carries the TOTP secret, the private key's passphrase and the proxy
 // URL, which has the proxy password inside it.
 func (d *ocOutDriver) writeConfig(dir, iface string, s *ocOutSettings) error {
-	return os.WriteFile(ocOutConfFile(dir), []byte(ocOutRenderConfig(dir, iface, s)), 0600)
+	return os.WriteFile(ocOutConfFile(dir), []byte(ocOutRenderConfig(dir, iface, s)), 0o600)
 }
 
 // ocOutRenderConfig is the config file's text, split from the write so the generated
@@ -974,7 +976,7 @@ func (d *ocOutDriver) writeGuard(dir, script string) error {
 	b.WriteString("unset INTERNAL_IP6_ADDRESS INTERNAL_IP6_NETMASK\n")
 	b.WriteString("# exec, not a call: the script identifies the connection by its own pid.\n")
 	b.WriteString("exec " + pppOutShellQuote(script) + "\n")
-	return os.WriteFile(ocOutGuard(dir), []byte(b.String()), 0700)
+	return os.WriteFile(ocOutGuard(dir), []byte(b.String()), 0o700)
 }
 
 // writeLauncher writes the script procmgr actually starts.
@@ -1002,7 +1004,7 @@ func (d *ocOutDriver) writeLauncher(dir, bin string, s *ocOutSettings) error {
 	b.WriteString("# it never appears in the process list. See vpnout_openconnect.go.\n")
 	b.WriteString(fmt.Sprintf("exec %s --config %s < %s\n",
 		pppOutShellQuote(bin), pppOutShellQuote(ocOutConfFile(dir)), pppOutShellQuote(stdin)))
-	return os.WriteFile(ocOutLauncher(dir), []byte(b.String()), 0700)
+	return os.WriteFile(ocOutLauncher(dir), []byte(b.String()), 0o700)
 }
 
 // ocOutStoredFingerprint reads back the fingerprint of the running config, or "".

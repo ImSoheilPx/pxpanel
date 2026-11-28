@@ -113,7 +113,7 @@ func writeCharonConf() error {
 	if err != nil {
 		return err
 	}
-	_ = os.MkdirAll(vpnOutIkev2ConfigRoot, 0755)
+	_ = os.MkdirAll(vpnOutIkev2ConfigRoot, 0o755)
 
 	// Both of these belong to a host strongSwan when there is one, and both are
 	// replaced outright: strongswan.conf with our whole render, swanctl.conf with a
@@ -122,18 +122,18 @@ func writeCharonConf() error {
 	// them; see the ownership manifest (manifest.PrepareHostFile).
 	manifest.PrepareHostFile("/etc/strongswan.conf", "ikev2")
 	if err := os.WriteFile("/etc/strongswan.conf",
-		[]byte(coreconfig.ApplyCoreConfigOverride("ipsec", 0, "strongswan.conf", body)), 0600); err != nil {
+		[]byte(coreconfig.ApplyCoreConfigOverride("ipsec", 0, "strongswan.conf", body)), 0o600); err != nil {
 		return fmt.Errorf("write /etc/strongswan.conf: %w", err)
 	}
 
 	// swanctl.conf just pulls in the per-protocol connection files, so it carries no
 	// operator-visible settings of its own and is not offered in the config editor.
-	_ = os.MkdirAll(swanctlConfDir, 0755)
-	_ = os.MkdirAll(swanctlX509, 0755)
-	_ = os.MkdirAll(swanctlX509CA, 0755)
-	_ = os.MkdirAll(swanctlPrivate, 0700)
+	_ = os.MkdirAll(swanctlConfDir, 0o755)
+	_ = os.MkdirAll(swanctlX509, 0o755)
+	_ = os.MkdirAll(swanctlX509CA, 0o755)
+	_ = os.MkdirAll(swanctlPrivate, 0o700)
 	manifest.PrepareHostFile(swanctlDir+"/swanctl.conf", "ikev2")
-	return os.WriteFile(swanctlDir+"/swanctl.conf", []byte("include conf.d/*.conf\n"), 0600)
+	return os.WriteFile(swanctlDir+"/swanctl.conf", []byte("include conf.d/*.conf\n"), 0o600)
 }
 
 // buildVpnOutCharonConf renders the strongswan.conf body. Split from the write so the
@@ -204,7 +204,7 @@ func ensureCharonRunning() error {
 		vpnlog.Warning("charon: link strongswan ipsec dir:", err)
 	}
 	if !procmgr.GetProcManager().IsRunning(vpnOutIkev2ProcName) {
-		_ = os.MkdirAll("/var/run", 0755)
+		_ = os.MkdirAll("/var/run", 0o755)
 		if err := procmgr.GetProcManager().Start(vpnOutIkev2ProcName, charonBin(), nil, nil, vpnOutIkev2ConfigRoot); err != nil {
 			return fmt.Errorf("start charon: %w", err)
 		}

@@ -15,6 +15,7 @@ package ssh
 
 import (
 	"bufio"
+	"context"
 	"encoding/binary"
 	"errors"
 	"fmt"
@@ -374,7 +375,7 @@ const (
 // else now owns the old port. Failing is the recoverable outcome.
 func listenLoopback(preferred int, allowRepick bool) (net.Listener, error) {
 	if preferred > 0 {
-		ln, err := net.Listen("tcp", fmt.Sprintf("127.0.0.1:%d", preferred))
+		ln, err := (&net.ListenConfig{}).Listen(context.Background(), "tcp", fmt.Sprintf("127.0.0.1:%d", preferred))
 		if err == nil || !allowRepick {
 			return ln, err
 		}
@@ -382,14 +383,14 @@ func listenLoopback(preferred int, allowRepick bool) (net.Listener, error) {
 			"is taken, allocating another:", err)
 	}
 	for port := sshOutPortFirst; port <= sshOutPortLast; port++ {
-		ln, err := net.Listen("tcp", fmt.Sprintf("127.0.0.1:%d", port))
+		ln, err := (&net.ListenConfig{}).Listen(context.Background(), "tcp", fmt.Sprintf("127.0.0.1:%d", port))
 		if err == nil {
 			return ln, nil
 		}
 	}
 	vpnlog.Warning("ssh outbound: no free port in", sshOutPortFirst, "-", sshOutPortLast,
 		"- falling back to an ephemeral one, which may not survive a reboot")
-	return net.Listen("tcp", "127.0.0.1:0")
+	return (&net.ListenConfig{}).Listen(context.Background(), "tcp", "127.0.0.1:0")
 }
 
 func (m *sshOutManager) stop(tag string) {
@@ -626,7 +627,7 @@ func (t *sshTunnel) handleSocks(conn net.Conn) {
 	upstream, err := client.Dial("tcp", net.JoinHostPort(host, strconv.Itoa(port)))
 	if err != nil {
 		t.log.add("channel to " + host + ": " + err.Error())
-		t.socksReply(conn, 0x05) // connection refused
+		_ = t.socksReply(conn, 0x05) // connection refused; the session is dead either way
 		return
 	}
 	if err := t.socksReply(conn, 0x00); err != nil {

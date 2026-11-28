@@ -21,8 +21,13 @@ var supportedDistros = map[string][]string{
 
 // supportedOrder fixes the display order for the summary (map order is random).
 var supportedOrder = []struct{ id, label string }{
-	{"ubuntu", "Ubuntu"}, {"debian", "Debian"}, {"fedora", "Fedora"},
-	{"almalinux", "AlmaLinux"}, {"rocky", "Rocky"}, {"centos", "CentOS Stream"}, {"arch", "Arch"},
+	{"ubuntu", "Ubuntu"},
+	{"debian", "Debian"},
+	{"fedora", "Fedora"},
+	{"almalinux", "AlmaLinux"},
+	{"rocky", "Rocky"},
+	{"centos", "CentOS Stream"},
+	{"arch", "Arch"},
 }
 
 // distroSupportedBy is the pure matcher (testable without /etc/os-release): given

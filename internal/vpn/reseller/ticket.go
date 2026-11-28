@@ -63,7 +63,8 @@ func postedClient(data *model.Inbound) (map[string]any, map[string]any, []any, e
 // The blob has to be patched before the inbound layer parses it, and doing the
 // surgery in one place beats repeating it at every call site.
 func applyToSettings(data *model.Inbound, profile *model.ResellerProfile, q ChargeQuote,
-	cm map[string]any, settings map[string]any, clients []any) error {
+	cm map[string]any, settings map[string]any, clients []any,
+) error {
 	// Overwrite rather than validate: the form is the reseller's, and a posted
 	// expiry that disagrees with the factor is not an error to report back, it is
 	// a field they should never have had.

@@ -457,7 +457,7 @@ func (s *OcservService) writeCertFiles(inbound *model.Inbound) error {
 	}
 
 	dir := s.configDir(inbound.Id)
-	os.MkdirAll(dir, 0755)
+	os.MkdirAll(dir, 0o755)
 
 	if strings.TrimSpace(settings.Certificate) != "" {
 		if err := s.writeFile(dir+"/server.crt", settings.Certificate); err != nil {
@@ -465,7 +465,7 @@ func (s *OcservService) writeCertFiles(inbound *model.Inbound) error {
 		}
 	}
 	if strings.TrimSpace(settings.Key) != "" {
-		if err := s.writeFileMode(dir+"/server.key", settings.Key, 0600); err != nil {
+		if err := s.writeFileMode(dir+"/server.key", settings.Key, 0o600); err != nil {
 			return err
 		}
 	}
@@ -484,7 +484,7 @@ func (s *OcservService) writeCertFiles(inbound *model.Inbound) error {
 // nas-identifier `openconnect-{id}` that the RADIUS server resolves directly.
 func (s *OcservService) writeRadiusClientConfig(inbound *model.Inbound) error {
 	dir := s.configDir(inbound.Id)
-	os.MkdirAll(dir, 0755)
+	os.MkdirAll(dir, 0o755)
 
 	// Reuse the self-contained dictionary the RADIUS service ships (it already
 	// carries NAS-Identifier, Framed-IP-Address, and the accounting attributes).
@@ -503,12 +503,12 @@ radius_retries	3
 nas-identifier	openconnect-%d
 bindaddr	*
 `, dir, dir, inbound.Id)
-	if err := os.WriteFile(dir+"/radiusclient.conf", []byte(config), 0644); err != nil {
+	if err := os.WriteFile(dir+"/radiusclient.conf", []byte(config), 0o644); err != nil {
 		return fmt.Errorf("failed to write radiusclient.conf: %w", err)
 	}
 
 	servers := fmt.Sprintf("127.0.0.1\t%s\n", s.getRadiusSecret())
-	return os.WriteFile(dir+"/servers", []byte(servers), 0600)
+	return os.WriteFile(dir+"/servers", []byte(servers), 0o600)
 }
 
 // SetupRouting prepares the host so OpenConnect client traffic is TPROXY-redirected
@@ -808,12 +808,12 @@ func (s *OcservService) getServerIP() string {
 }
 
 func (s *OcservService) writeFile(path, content string) error {
-	return s.writeFileMode(path, content, 0644)
+	return s.writeFileMode(path, content, 0o644)
 }
 
 func (s *OcservService) writeFileMode(path, content string, mode os.FileMode) error {
 	dir := filepath.Dir(path)
-	if err := os.MkdirAll(dir, 0755); err != nil {
+	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return fmt.Errorf("failed to create directory %s: %w", dir, err)
 	}
 	if err := os.WriteFile(path, []byte(content), mode); err != nil {

@@ -98,10 +98,10 @@ func (s *GreService) syncIpsec() error {
 // writeGreSwanctlConn writes one inbound's IKE connection: PSK auth, ESP transport mode,
 // traffic selectors narrowed to protocol 47.
 func (s *GreService) writeGreSwanctlConn(inbound *model.Inbound, settings *greSettings, path string) error {
-	_ = os.MkdirAll(pkgmgr.SwanctlConfDir(), 0755)
+	_ = os.MkdirAll(pkgmgr.SwanctlConfDir(), 0o755)
 	body := coreconfig.ApplyCoreConfigOverride("gre", inbound.Id, fmt.Sprintf("gre-%d.conf", inbound.Id),
 		s.buildGreSwanctlConn(inbound, settings))
-	return os.WriteFile(path, []byte(body), 0600)
+	return os.WriteFile(path, []byte(body), 0o600)
 }
 
 // buildGreSwanctlConn renders the body. Split from the write so the config editor can

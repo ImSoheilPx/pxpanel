@@ -155,7 +155,7 @@ func Connect() {
 	}
 	if leased != "" {
 		if len(os.Args) >= 4 && os.Args[3] != "" {
-			_ = os.WriteFile(os.Args[3], []byte(fmt.Sprintf("ifconfig-push %s %s\n", leased, mask)), 0644)
+			_ = os.WriteFile(os.Args[3], []byte(fmt.Sprintf("ifconfig-push %s %s\n", leased, mask)), 0o644)
 		}
 		ip = leased
 	}
@@ -168,11 +168,11 @@ func Connect() {
 	sessionID := fmt.Sprintf("openvpn-%d-%s-%s", inboundId, username, ip)
 
 	packet := radius.New(radius.CodeAccountingRequest, []byte(secret))
-	rfc2866.AcctStatusType_Set(packet, rfc2866.AcctStatusType_Value_Start)
-	rfc2866.AcctSessionID_SetString(packet, sessionID)
-	rfc2865.UserName_SetString(packet, username)
-	rfc2865.NASIdentifier_SetString(packet, fmt.Sprintf("openvpn-%d", inboundId))
-	rfc2865.FramedIPAddress_Set(packet, net.ParseIP(ip))
+	_ = rfc2866.AcctStatusType_Set(packet, rfc2866.AcctStatusType_Value_Start)
+	_ = rfc2866.AcctSessionID_SetString(packet, sessionID)
+	_ = rfc2865.UserName_SetString(packet, username)
+	_ = rfc2865.NASIdentifier_SetString(packet, fmt.Sprintf("openvpn-%d", inboundId))
+	_ = rfc2865.FramedIPAddress_Set(packet, net.ParseIP(ip))
 
 	resp, err := radius.Exchange(context.Background(), packet, "127.0.0.1:1813")
 	if err != nil {
@@ -235,16 +235,16 @@ func Disconnect() {
 	}
 
 	packet := radius.New(radius.CodeAccountingRequest, []byte(secret))
-	rfc2866.AcctStatusType_Set(packet, rfc2866.AcctStatusType_Value_Stop)
-	rfc2866.AcctSessionID_SetString(packet, sessionID)
-	rfc2865.UserName_SetString(packet, username)
-	rfc2865.NASIdentifier_SetString(packet, fmt.Sprintf("openvpn-%d", inboundId))
-	rfc2865.FramedIPAddress_Set(packet, net.ParseIP(ip))
+	_ = rfc2866.AcctStatusType_Set(packet, rfc2866.AcctStatusType_Value_Stop)
+	_ = rfc2866.AcctSessionID_SetString(packet, sessionID)
+	_ = rfc2865.UserName_SetString(packet, username)
+	_ = rfc2865.NASIdentifier_SetString(packet, fmt.Sprintf("openvpn-%d", inboundId))
+	_ = rfc2865.FramedIPAddress_Set(packet, net.ParseIP(ip))
 	if sessionTime > 0 {
-		rfc2866.AcctSessionTime_Set(packet, rfc2866.AcctSessionTime(sessionTime))
+		_ = rfc2866.AcctSessionTime_Set(packet, rfc2866.AcctSessionTime(sessionTime))
 	}
 
-	radius.Exchange(context.Background(), packet, "127.0.0.1:1813")
+	_ = radius.Exchange(context.Background(), packet, "127.0.0.1:1813")
 	os.Exit(0)
 }
 
@@ -372,10 +372,10 @@ func ovpnLeaseBlockIP(inboundId int, username, poolIP, sessionKey string) (strin
 	// devices dialing at once can both read the block as free and lease the SAME IP
 	// (an over-admit / duplicate-IP race). An exclusive flock makes the whole
 	// read-decide-write below atomic across hooks; it releases when this process exits.
-	if lf, lerr := os.OpenFile(filepath.Join(dir, "connect-"+proto+".lock"), os.O_CREATE|os.O_RDWR, 0644); lerr == nil {
+	if lf, lerr := os.OpenFile(filepath.Join(dir, "connect-"+proto+".lock"), os.O_CREATE|os.O_RDWR, 0o644); lerr == nil {
 		defer lf.Close()
 		if syscall.Flock(int(lf.Fd()), syscall.LOCK_EX) == nil {
-			defer syscall.Flock(int(lf.Fd()), syscall.LOCK_UN)
+			defer func() { _ = syscall.Flock(int(lf.Fd()), syscall.LOCK_UN) }()
 		}
 	}
 
@@ -392,7 +392,7 @@ func ovpnLeaseBlockIP(inboundId int, username, poolIP, sessionKey string) (strin
 	released := ovpnReleasedIPs(dir, proto)
 
 	leaseDir := filepath.Join(dir, "leases-"+proto)
-	_ = os.MkdirAll(leaseDir, 0755)
+	_ = os.MkdirAll(leaseDir, 0o755)
 	now := time.Now()
 	leaseAge := make(map[string]time.Duration) // block IP -> age of its gap-lease
 	if entries, e := os.ReadDir(leaseDir); e == nil {
@@ -537,7 +537,7 @@ func oldestLeasedIP(leaseAge map[string]time.Duration) string {
 // ovpnWriteLease records a gap-lease file named by the leased block IP, storing the
 // device's pool IP as content so the disconnect hook can find and free it by pool IP.
 func ovpnWriteLease(leaseDir, blockIP, sessionKey string) {
-	_ = os.WriteFile(filepath.Join(leaseDir, blockIP), []byte(sessionKey), 0644)
+	_ = os.WriteFile(filepath.Join(leaseDir, blockIP), []byte(sessionKey), 0o644)
 }
 
 // ovpnSessionKey identifies ONE device session, for matching a lease at disconnect back
@@ -632,10 +632,10 @@ func ovpnWriteRelease(dir, proto, blockIP string) {
 		return
 	}
 	relDir := filepath.Join(dir, "released-"+proto)
-	if err := os.MkdirAll(relDir, 0755); err != nil {
+	if err := os.MkdirAll(relDir, 0o755); err != nil {
 		return
 	}
-	_ = os.WriteFile(filepath.Join(relDir, blockIP), nil, 0644)
+	_ = os.WriteFile(filepath.Join(relDir, blockIP), nil, 0o644)
 }
 
 // ovpnReleasedIPs returns the block IPs released within the TTL, expiring older markers.

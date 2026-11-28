@@ -50,8 +50,10 @@ const (
 // TunnelProtocols are the protocols with an address pool and nft accounting
 // (the "VPN protocols" proper). Relay protocols (mtproto, ssh) and the
 // Xray-native ones are NOT in this list. (A var: Go slices cannot be consts.)
-var TunnelProtocols = []string{"l2tp", "pptp", "openvpn", "openconnect", "sstp",
-	"ikev2", "wg-c", "awg", "gre"}
+var TunnelProtocols = []string{
+	"l2tp", "pptp", "openvpn", "openconnect", "sstp",
+	"ikev2", "wg-c", "awg", "gre",
+}
 
 // ikev2DefaultMtu is what an IKEv2 tunnel gets when the operator names no MTU.
 // 1400 because a real-world IKEv2 client is behind a NAT and therefore carrying

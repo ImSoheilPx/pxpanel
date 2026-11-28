@@ -264,8 +264,8 @@ func (s *PptpService) buildPptpdConfig(inbounds []*model.Inbound) string {
 	// pptpd reuses the single localip for every connection when remoteip has more
 	// addresses; one localip + the aggregated remoteip pool covers all inbounds.
 	b.WriteString("option /etc/ppp/pptpd-options\n")
-	b.WriteString(fmt.Sprintf("localip %s\n", localIp))
-	b.WriteString(fmt.Sprintf("remoteip %s\n", strings.Join(groups, ",")))
+	fmt.Fprintf(&b, "localip %s\n", localIp)
+	fmt.Fprintf(&b, "remoteip %s\n", strings.Join(groups, ","))
 
 	return b.String()
 }
@@ -317,8 +317,8 @@ func (s *PptpService) buildPPPOptions(inbound *model.Inbound) (string, error) {
 	// Disable IPv6CP: the PPTP data path (nftables TPROXY -> Xray) is IPv4-only,
 	// so a negotiated IPv6 link would leak IPv6 traffic and DNS past Xray.
 	b.WriteString("noipv6\n")
-	b.WriteString(fmt.Sprintf("ms-dns %s\n", dns1))
-	b.WriteString(fmt.Sprintf("ms-dns %s\n", dns2))
+	fmt.Fprintf(&b, "ms-dns %s\n", dns1)
+	fmt.Fprintf(&b, "ms-dns %s\n", dns2)
 	b.WriteString("proxyarp\n")
 	b.WriteString("nodefaultroute\n")
 	b.WriteString("lock\n")
@@ -351,12 +351,12 @@ func (s *PptpService) getDisabledEmails() map[string]bool {
 // SetupAllTproxy sets up kernel modules, ip rules, and nftables rules for TPROXY.
 func (s *PptpService) SetupAllTproxy() error {
 	// Enable IP forwarding
-	s.runCmd("sysctl", "-w", "net.ipv4.ip_forward=1")
+	_ = s.runCmd("sysctl", "-w", "net.ipv4.ip_forward=1")
 
 	// Load kernel modules needed for PPTP
-	s.runCmd("modprobe", "nf_conntrack_pptp")
-	s.runCmd("modprobe", "ip_gre")
-	s.runCmd("modprobe", "ppp_generic")
+	_ = s.runCmd("modprobe", "nf_conntrack_pptp")
+	_ = s.runCmd("modprobe", "ip_gre")
+	_ = s.runCmd("modprobe", "ppp_generic")
 	s.runCmd("modprobe", "ppp_mppe")
 	s.runCmd("modprobe", "nf_tproxy_ipv4")
 
@@ -472,12 +472,12 @@ func (s *PptpService) DisableClients(emails []string) {
 }
 
 func (s *PptpService) writeFile(path, content string) error {
-	return s.writeFileMode(path, content, 0644)
+	return s.writeFileMode(path, content, 0o644)
 }
 
 func (s *PptpService) writeFileMode(path, content string, mode os.FileMode) error {
 	dir := filepath.Dir(path)
-	if err := os.MkdirAll(dir, 0755); err != nil {
+	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return fmt.Errorf("failed to create directory %s: %w", dir, err)
 	}
 	if err := os.WriteFile(path, []byte(content), mode); err != nil {

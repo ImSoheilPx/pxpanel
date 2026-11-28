@@ -434,7 +434,7 @@ func (s *RadiusService) allocateBlockIP(inboundId, accountSlot int, blockIPs []s
 				up, down := s.nft.ReadAndResetClientCounters(protocol, victimIP)
 				vpn.TrafficSinkFor().FoldClientTraffic(victim.email, victim.protocol, victim.inboundId, up, down)
 			}
-			s.nft.RemoveClientAccounting(protocol, victimIP)
+			_ = s.nft.RemoveClientAccounting(protocol, victimIP) // best-effort teardown; the next reconcile re-derives the counters
 			// Force the old device's link down (vpn-ui dispatched straight into the
 			// protocol services). PORT: every teardown goes through the injected seams —
 			// vpn.EvictProtocolIP for the daemon-backed protocols (no evictor registered

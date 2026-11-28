@@ -564,7 +564,7 @@ func (s *SstpService) writeCertFiles(inbound *model.Inbound) error {
 		}
 	}
 	if strings.TrimSpace(settings.Key) != "" {
-		if err := s.writeFileMode(dir+"/server.key", settings.Key, 0600); err != nil {
+		if err := s.writeFileMode(dir+"/server.key", settings.Key, 0o600); err != nil {
 			return err
 		}
 	}
@@ -886,12 +886,12 @@ func (s *SstpService) GenerateSelfSignedCert(serverAddr string) (string, string,
 }
 
 func (s *SstpService) writeFile(path, content string) error {
-	return s.writeFileMode(path, content, 0644)
+	return s.writeFileMode(path, content, 0o644)
 }
 
 func (s *SstpService) writeFileMode(path, content string, mode os.FileMode) error {
 	dir := filepath.Dir(path)
-	if err := os.MkdirAll(dir, 0755); err != nil {
+	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return fmt.Errorf("failed to create directory %s: %w", dir, err)
 	}
 	if err := os.WriteFile(path, []byte(content), mode); err != nil {

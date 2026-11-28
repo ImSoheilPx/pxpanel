@@ -5,14 +5,15 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	commonutil "github.com/ImSoheilPx/pxpanel/internal/util/common"
-	vpn "github.com/ImSoheilPx/pxpanel/internal/vpn"
 	"hash/fnv"
 	"net"
 	"strconv"
 	"strings"
 	"sync"
 	"time"
+
+	commonutil "github.com/ImSoheilPx/pxpanel/internal/util/common"
+	vpn "github.com/ImSoheilPx/pxpanel/internal/vpn"
 
 	logger "github.com/ImSoheilPx/pxpanel/internal/vpn/log"
 
@@ -299,8 +300,8 @@ func (d *wgOutDriver) Up(cfg VpnOutboundConfig) (string, error) {
 // tunnel address exists, matching the v4-only default the inbound side uses to avoid
 // an IPv6 leak.
 func (d *wgOutDriver) configure(cl *wgctrl.Client, iface string, priv, peerPub wgtypes.Key,
-	psk *wgtypes.Key, endpoint *net.UDPAddr, keepalive time.Duration, withV6 bool) error {
-
+	psk *wgtypes.Key, endpoint *net.UDPAddr, keepalive time.Duration, withV6 bool,
+) error {
 	dev, derr := cl.Device(iface)
 	var cur *wgtypes.Peer
 	if derr == nil && dev != nil {

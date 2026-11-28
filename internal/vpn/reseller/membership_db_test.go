@@ -65,10 +65,14 @@ func seedMembershipInbound(t *testing.T, port int, protocol model.Protocol, clie
 // unless a test sets that up deliberately.
 func soldAndHouse(sold string, soldTotal int64) []map[string]any {
 	return []map[string]any{
-		{"id": "uuid-" + sold, "password": "pw-" + sold, "email": sold,
-			"enable": false, "totalGB": soldTotal},
-		{"id": "uuid-house", "password": "pw-house", "email": "admins-client",
-			"enable": false, "totalGB": 1 * gb},
+		{
+			"id": "uuid-" + sold, "password": "pw-" + sold, "email": sold,
+			"enable": false, "totalGB": soldTotal,
+		},
+		{
+			"id": "uuid-house", "password": "pw-house", "email": "admins-client",
+			"enable": false, "totalGB": 1 * gb,
+		},
 	}
 }
 

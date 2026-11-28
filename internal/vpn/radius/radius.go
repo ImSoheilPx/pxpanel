@@ -299,7 +299,7 @@ func (s *RadiusService) handleAuth(w radius.ResponseWriter, r *radius.Request) {
 	if userPassword != "" {
 		if userPassword != password {
 			logger.Infof("RADIUS: auth rejected (PAP) — wrong password user=%s nas=%s", username, nasID)
-			w.Write(r.Response(radius.CodeAccessReject))
+			_ = w.Write(r.Response(radius.CodeAccessReject))
 			return
 		}
 		accept := r.Response(radius.CodeAccessAccept)
@@ -315,7 +315,7 @@ func (s *RadiusService) handleAuth(w radius.ResponseWriter, r *radius.Request) {
 			clientIP, deny := s.getClientIP(protocol, inboundId, username, station, nasPort)
 			if deny {
 				logger.Infof("RADIUS: auth rejected — user-limit reached (strategy=reject) user=%s nas=%s", username, nasID)
-				w.Write(r.Response(radius.CodeAccessReject))
+				_ = w.Write(r.Response(radius.CodeAccessReject))
 				return
 			}
 			// A keyless Access-Accept is not a safe fallback for OpenConnect. ocserv would
@@ -328,7 +328,7 @@ func (s *RadiusService) handleAuth(w radius.ResponseWriter, r *radius.Request) {
 			// outside the routing backstop's valid-IP list, so Xray blackholes it anyway.
 			if clientIP == nil {
 				logger.Infof("RADIUS: auth rejected: no tunnel IP available (pool exhausted?) user=%s nas=%s", username, nasID)
-				w.Write(r.Response(radius.CodeAccessReject))
+				_ = w.Write(r.Response(radius.CodeAccessReject))
 				return
 			}
 			_ = rfc2865.FramedIPAddress_Set(accept, clientIP)
@@ -354,7 +354,7 @@ func (s *RadiusService) handleAuth(w radius.ResponseWriter, r *radius.Request) {
 	if len(challenge) != 16 || len(response) != 50 {
 		logger.Infof("RADIUS: auth rejected — bad MS-CHAPv2 lengths (challenge=%d response=%d) user=%s",
 			len(challenge), len(response), username)
-		w.Write(r.Response(radius.CodeAccessReject))
+		_ = w.Write(r.Response(radius.CodeAccessReject))
 		return
 	}
 
@@ -365,13 +365,13 @@ func (s *RadiusService) handleAuth(w radius.ResponseWriter, r *radius.Request) {
 	ntResponse, err := rfc2759.GenerateNTResponse(challenge, peerChallenge, []byte(username), []byte(password))
 	if err != nil {
 		logger.Warning("RADIUS: GenerateNTResponse failed:", err)
-		w.Write(r.Response(radius.CodeAccessReject))
+		_ = w.Write(r.Response(radius.CodeAccessReject))
 		return
 	}
 
 	if !bytes.Equal(ntResponse, peerResponse) {
 		logger.Debugf("RADIUS: auth rejected — wrong password user=%s nas=%s", username, nasID)
-		w.Write(r.Response(radius.CodeAccessReject))
+		_ = w.Write(r.Response(radius.CodeAccessReject))
 		return
 	}
 
@@ -403,7 +403,7 @@ func (s *RadiusService) handleAuth(w radius.ResponseWriter, r *radius.Request) {
 	clientIP, deny := s.getClientIP(protocol, inboundId, username, station, nasPort)
 	if deny {
 		logger.Infof("RADIUS: auth rejected — user-limit reached (strategy=reject) user=%s nas=%s", username, nasID)
-		w.Write(r.Response(radius.CodeAccessReject))
+		_ = w.Write(r.Response(radius.CodeAccessReject))
 		return
 	}
 	if clientIP != nil {

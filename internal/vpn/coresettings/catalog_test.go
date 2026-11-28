@@ -301,7 +301,7 @@ func TestEveryVpnProtocolMapsToItsCore(t *testing.T) {
 	served := map[string]bool{}
 	for _, p := range []string{
 		"l2tp", "pptp", "openvpn", "openconnect", "sstp",
-		"ikev2", "wg-c", "awg", "gre", "mtproto",
+		"ikev2", "wg-c", "awg", "gre", "mtproto", "mtproto-c",
 	} {
 		served[protocolCoreName(p)] = true
 	}

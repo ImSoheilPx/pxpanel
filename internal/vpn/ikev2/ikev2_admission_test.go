@@ -71,16 +71,20 @@ func TestIkev2AdmissionSigTracksAccountState(t *testing.T) {
 		t.Fatal("signature did not move when the account went over quota: no reload, conn stays loaded")
 	}
 
-	off := []*model.Inbound{{Id: 7, Enable: true,
-		Settings: `{"authMode":"psk","psk":"secret","clients":[{"id":"u1","email":"u1@t","enable":false}]}`}}
+	off := []*model.Inbound{{
+		Id: 7, Enable: true,
+		Settings: `{"authMode":"psk","psk":"secret","clients":[{"id":"u1","email":"u1@t","enable":false}]}`,
+	}}
 	if s.admissionSig(off, none) == base {
 		t.Fatal("signature did not move when the account was switched off")
 	}
 
 	// An eap-mschapv2 account going over quota must NOT move the signature: RADIUS
 	// enforces it, so reloading charon would be pure churn.
-	eap := []*model.Inbound{{Id: 7, Enable: true,
-		Settings: `{"authMode":"eap-mschapv2","clients":[{"id":"u1","email":"u1@t","enable":true}]}`}}
+	eap := []*model.Inbound{{
+		Id: 7, Enable: true,
+		Settings: `{"authMode":"eap-mschapv2","clients":[{"id":"u1","email":"u1@t","enable":true}]}`,
+	}}
 	if s.admissionSig(eap, map[string]bool{"u1@t": true}) != s.admissionSig(eap, none) {
 		t.Fatal("eap-mschapv2 quota moved the signature: charon would reload for nothing")
 	}

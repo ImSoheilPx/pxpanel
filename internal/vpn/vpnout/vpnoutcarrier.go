@@ -173,7 +173,8 @@ func (c vpnOutCarrier) Bridged() bool { return c.Kind == vpnOutCarrierBridged }
 // which are a socks outbound aimed at a loopback port by the time the core sees them
 // (applySshOutboundsWith) but may not be in the template at all yet.
 func vpnOutCarrierFor(tag string, tunnels []VpnOutboundConfig, sshTags []string,
-	obs []map[string]any) (vpnOutCarrier, error) {
+	obs []map[string]any,
+) (vpnOutCarrier, error) {
 	tag = strings.TrimSpace(tag)
 	if tag == "" {
 		return vpnOutCarrier{}, nil
@@ -198,8 +199,10 @@ func vpnOutCarrierFor(tag string, tunnels []VpnOutboundConfig, sshTags []string,
 	// so there is nothing to exclude.
 	for _, s := range sshTags {
 		if s == tag {
-			return vpnOutCarrier{Tag: tag, Kind: vpnOutCarrierBridged,
-				Iface: vpnOutCarrierDev(tag)}, nil
+			return vpnOutCarrier{
+				Tag: tag, Kind: vpnOutCarrierBridged,
+				Iface: vpnOutCarrierDev(tag),
+			}, nil
 		}
 	}
 
@@ -779,7 +782,8 @@ func vpnOutCarrierNames(tunnels []VpnOutboundConfig, sshList []ssh.SshOutboundCo
 // already knows everything about them, and a second source for the same fact is how the
 // two disagree. What comes back is the carriers the planner could not have known about.
 func vpnOutCarrierPlan(tunnels []VpnOutboundConfig, sshList []ssh.SshOutboundConfig,
-	obs []map[string]any) (carriers []vpnOutCarrier, problems []string) {
+	obs []map[string]any,
+) (carriers []vpnOutCarrier, problems []string) {
 	names := vpnOutCarrierNames(tunnels, sshList)
 	sshTags := make([]string, 0, len(sshList))
 	for _, s := range sshList {
@@ -885,7 +889,8 @@ func vpnOutLookupHostPrefixes(host string) []string {
 // before a rule points into it, or the first packet finds an empty table and falls
 // through to main, which is the leak this scheme exists to close.
 func vpnOutResolveCarrier(tag string, tunnels []VpnOutboundConfig,
-	sshList []ssh.SshOutboundConfig) (vpnOutCarrier, vpnOutViaFacts, error) {
+	sshList []ssh.SshOutboundConfig,
+) (vpnOutCarrier, vpnOutViaFacts, error) {
 	sshTags := make([]string, 0, len(sshList))
 	for _, s := range sshList {
 		sshTags = append(sshTags, s.Tag)

@@ -34,6 +34,7 @@
 package coreconfig
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -413,10 +414,10 @@ func ValidateWithDaemon(bin, name, content string, args func(tmp string) []strin
 	}
 	defer os.RemoveAll(dir)
 	tmp := dir + "/" + name
-	if err := os.WriteFile(tmp, []byte(content), 0600); err != nil {
+	if err := os.WriteFile(tmp, []byte(content), 0o600); err != nil {
 		return err
 	}
-	out, err := exec.Command(bin, args(tmp)...).CombinedOutput()
+	out, err := exec.CommandContext(context.Background(), bin, args(tmp)...).CombinedOutput()
 	if err == nil {
 		return nil
 	}

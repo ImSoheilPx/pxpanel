@@ -421,13 +421,13 @@ func (s *L2tpService) writeL2tpSwanctlConn(inbounds []*model.Inbound) error {
 	confPath := ipsec.SwanctlConfDir() + "/l2tp.conf"
 
 	if peers := l2tpPerListenPeers(s.l2tpIpsecPeers(inbounds, true)); len(peers) > 0 {
-		_ = os.MkdirAll(ipsec.SwanctlConfDir(), 0755)
+		_ = os.MkdirAll(ipsec.SwanctlConfDir(), 0o755)
 		wanted := map[string]bool{}
 		for _, peer := range peers {
 			file := fmt.Sprintf("l2tp-%d.conf", peer.inbound.Id)
 			path := ipsec.SwanctlConfDir() + "/" + file
 			body := configedit.ApplyOverride("l2tp", peer.inbound.Id, file, s.buildL2tpSwanctlConnFor(peer))
-			if err := os.WriteFile(path, []byte(body), 0600); err != nil {
+			if err := os.WriteFile(path, []byte(body), 0o600); err != nil {
 				return err
 			}
 			wanted[path] = true
@@ -452,9 +452,9 @@ func (s *L2tpService) writeL2tpSwanctlConn(inbounds []*model.Inbound) error {
 		_ = os.Remove(confPath)
 		return nil
 	}
-	_ = os.MkdirAll(ipsec.SwanctlConfDir(), 0755)
+	_ = os.MkdirAll(ipsec.SwanctlConfDir(), 0o755)
 	return os.WriteFile(confPath,
-		[]byte(configedit.ApplyOverride("l2tp", 0, "l2tp.conf", body)), 0600)
+		[]byte(configedit.ApplyOverride("l2tp", 0, "l2tp.conf", body)), 0o600)
 }
 
 // l2tpPruneSwanctlConns deletes every per-inbound l2tp connection file that is not in
@@ -510,13 +510,13 @@ func (s *L2tpService) RestartServices() error {
 	if len(inbounds) == 0 {
 		// Teardown best-effort: nothing is left to serve, and a failed stop is
 		// retried (or surfaces) on the next reconcile.
-		_ = procmgr.GetProcManager().Stop("xl2tpd")
+		_ = procmgr.GetProcManager().Stop("xl2tpd") // best-effort stop; status is re-derived from the child table
 		return nil
 	}
 
 	// xl2tpd -D runs in the foreground reading /etc/xl2tpd/xl2tpd.conf; the panel
 	// supervises it and reaps its pppd children.
-	os.MkdirAll("/var/run/xl2tpd", 0755)
+	os.MkdirAll("/var/run/xl2tpd", 0o755)
 	if err := procmgr.GetProcManager().Start("xl2tpd", procmgr.DaemonBin("xl2tpd"), []string{"-D"}, procmgr.PppdEnv(), ""); err != nil {
 		log.Warning("L2TP: failed to start xl2tpd:", err)
 	}
@@ -650,12 +650,12 @@ func (s *L2tpService) DisableClients(emails []string) {
 }
 
 func (s *L2tpService) writeFile(path, content string) error {
-	return s.writeFileMode(path, content, 0644)
+	return s.writeFileMode(path, content, 0o644)
 }
 
 func (s *L2tpService) writeFileMode(path, content string, mode os.FileMode) error {
 	dir := filepath.Dir(path)
-	if err := os.MkdirAll(dir, 0755); err != nil {
+	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return fmt.Errorf("failed to create directory %s: %w", dir, err)
 	}
 	if err := os.WriteFile(path, []byte(content), mode); err != nil {

@@ -202,8 +202,10 @@ func TestAwgReconcileMintsObfuscation(t *testing.T) {
 	if err != nil || len(cfgs) != 1 {
 		t.Fatalf("RenderClientConfigs: %d configs, err=%v", len(cfgs), err)
 	}
-	for _, line := range []string{"Jc = 4", "Jmin = 8", "Jmax = 80", "S1 = 77", "S2 = 90",
-		"H1 = " + obfs.H1, "H4 = " + obfs.H4} {
+	for _, line := range []string{
+		"Jc = 4", "Jmin = 8", "Jmax = 80", "S1 = 77", "S2 = 90",
+		"H1 = " + obfs.H1, "H4 = " + obfs.H4,
+	} {
 		if !strings.Contains(cfgs[0].Config, line+"\n") {
 			t.Errorf("client config missing %q:\n%s", line, cfgs[0].Config)
 		}

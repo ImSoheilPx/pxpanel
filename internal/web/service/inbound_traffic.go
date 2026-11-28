@@ -36,7 +36,7 @@ func (s *InboundService) AddTraffic(inboundTraffics []*xray.Traffic, clientTraff
 		return inner
 	})
 	if err != nil {
-		return
+		return needRestart, clientsDisabled, err
 	}
 	s.resetMtprotoClientQuotas(renewed)
 	// Off the serial writer: a hanging node must not stall traffic accounting.
@@ -44,7 +44,7 @@ func (s *InboundService) AddTraffic(inboundTraffics []*xray.Traffic, clientTraff
 	if len(disabledNodeIDs) > 0 {
 		s.restartRemoteNodesOnDisable(disabledNodeIDs)
 	}
-	return
+	return needRestart, clientsDisabled, err
 }
 
 func (s *InboundService) addTrafficLocked(inboundTraffics []*xray.Traffic, clientTraffics []*xray.ClientTraffic) (bool, bool, []int, []trafficInboundUpdatePlan, []string, error) {
@@ -754,7 +754,7 @@ func (s *InboundService) ResetClientTraffic(id int, clientEmail string) (needRes
 			s.deliverNodeResetsNow([]int{*ownNode})
 		}
 	}
-	return
+	return needRestart, err
 }
 
 func (s *InboundService) resetClientTrafficLocked(id int, clientEmail string) (bool, *int, error) {

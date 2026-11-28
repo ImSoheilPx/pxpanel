@@ -239,10 +239,14 @@ func TestVpnOutViaInUse(t *testing.T) {
 
 // The worked example, and the one measured end to end: gre-b carries wg-a.
 func TestVpnOutViaRulesPrioritiesAndTables(t *testing.T) {
-	carried := vpnOutViaFacts{Tag: "wg-a", Via: "gre-b", Enable: true,
-		ServerAddrs: []string{"203.0.113.10/32"}}
-	carrier := vpnOutViaFacts{Tag: "gre-b", Enable: true,
-		ServerAddrs: []string{"198.51.100.7/32"}, Table: vpnOutRouteTableBase + 42}
+	carried := vpnOutViaFacts{
+		Tag: "wg-a", Via: "gre-b", Enable: true,
+		ServerAddrs: []string{"203.0.113.10/32"},
+	}
+	carrier := vpnOutViaFacts{
+		Tag: "gre-b", Enable: true,
+		ServerAddrs: []string{"198.51.100.7/32"}, Table: vpnOutRouteTableBase + 42,
+	}
 
 	got := vpnOutViaRules(carried, carrier)
 	if len(got) != 2 {
@@ -345,8 +349,10 @@ func TestVpnOutViaDiffIgnoresTheStamp(t *testing.T) {
 // three leaks waiting for a retry.
 func TestVpnOutViaRulesCoverEveryResolvedAddress(t *testing.T) {
 	got := vpnOutViaRules(
-		vpnOutViaFacts{Tag: "a", Via: "b", Enable: true,
-			ServerAddrs: []string{"203.0.113.10/32", "203.0.113.11/32"}},
+		vpnOutViaFacts{
+			Tag: "a", Via: "b", Enable: true,
+			ServerAddrs: []string{"203.0.113.10/32", "203.0.113.11/32"},
+		},
 		vpnOutViaFacts{Tag: "b", Enable: true, ServerAddrs: []string{"198.51.100.7/32"}, Table: 30042},
 	)
 	var steered []string
@@ -563,8 +569,10 @@ func TestVpnOutViaSteerTakesCarrierFacts(t *testing.T) {
 		// One address, two tunnels: a rule selects on the destination and cannot tell them
 		// apart, and the exclusion is the lower rule, so the carried tunnel would leave in
 		// the clear while every screen called it carried.
-		{"a shared address", vpnOutViaFacts{Tag: "proxy-vless", Enable: true, Table: 30042,
-			ServerAddrs: []string{"203.0.113.10/32"}}, "203.0.113.10"},
+		{"a shared address", vpnOutViaFacts{
+			Tag: "proxy-vless", Enable: true, Table: 30042,
+			ServerAddrs: []string{"203.0.113.10/32"},
+		}, "203.0.113.10"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			err := vpnOutSteerVia(carried, tc.carrier)
@@ -582,8 +590,10 @@ func TestVpnOutViaSteerTakesCarrierFacts(t *testing.T) {
 
 	t.Run("a resolved carrier gets the exclusion and the steer", func(t *testing.T) {
 		added = nil
-		err := vpnOutSteerVia(carried, vpnOutViaFacts{Tag: "proxy-vless", Enable: true,
-			Table: 30042, ServerAddrs: []string{"198.51.100.7/32"}})
+		err := vpnOutSteerVia(carried, vpnOutViaFacts{
+			Tag: "proxy-vless", Enable: true,
+			Table: 30042, ServerAddrs: []string{"198.51.100.7/32"},
+		})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -604,8 +614,10 @@ func TestVpnOutViaSteerTakesCarrierFacts(t *testing.T) {
 	t.Run("a carried carrier keeps its own steer", func(t *testing.T) {
 		for _, via := range []string{"upstream", "  upstream  "} {
 			added = nil
-			if err := vpnOutSteerVia(carried, vpnOutViaFacts{Tag: "proxy-vless", Via: via, Enable: true,
-				Table: 30042, ServerAddrs: []string{"198.51.100.7/32"}}); err != nil {
+			if err := vpnOutSteerVia(carried, vpnOutViaFacts{
+				Tag: "proxy-vless", Via: via, Enable: true,
+				Table: 30042, ServerAddrs: []string{"198.51.100.7/32"},
+			}); err != nil {
 				t.Fatal(err)
 			}
 			if len(added) != 1 || added[0].Table != 30042 {
@@ -709,8 +721,10 @@ func TestVpnOutUnbindEgressSweepsSteersBeforeFlushingTheTable(t *testing.T) {
 		{Priority: 30042, OifName: "cgre-b", Table: table},
 		{Priority: 20001, Table: table, Dst: &net.IPNet{IP: net.IPv4(203, 0, 113, 10), Mask: net.CIDRMask(32, 32)}},
 	}
-	seen := []vpnOutRule{{Priority: 30042, OifName: "cgre-b", Table: table},
-		{Priority: 20001, Table: table, Dst: "203.0.113.10/32"}}
+	seen := []vpnOutRule{
+		{Priority: 30042, OifName: "cgre-b", Table: table},
+		{Priority: 20001, Table: table, Dst: "203.0.113.10/32"},
+	}
 
 	var events []string
 	defer swapVia(&vpnOutTableOf, func(iface string) int {
@@ -868,7 +882,7 @@ func TestVpnOutViaOrderRaisesCarriersFirst(t *testing.T) {
 	if len(tags) != len(list) {
 		t.Fatalf("order = %v, want every tunnel", tags)
 	}
-	if !(pos["c"] < pos["b"] && pos["b"] < pos["a"]) {
+	if pos["c"] >= pos["b"] || pos["b"] >= pos["a"] {
 		t.Errorf("order = %v, want c before b before a: a carried tunnel raised before its carrier finds an empty table", tags)
 	}
 }

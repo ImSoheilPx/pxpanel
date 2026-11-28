@@ -436,7 +436,7 @@ func gregorianToJalali(gy, gm, gd int) (jy, jm, jd int) {
 		remaining := int64(jalaliMonthDays(jy, jm) - jd + 1)
 		if days < remaining {
 			jd += int(days)
-			return
+			return jy, jm, jd
 		}
 		days -= remaining
 		jm++
@@ -459,7 +459,7 @@ func gregorianToJalali(gy, gm, gd int) (jy, jm, jd int) {
 		}
 		days = 0
 	}
-	return
+	return jy, jm, jd
 }
 
 func jalaliMonthDays(y, m int) int {

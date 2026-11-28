@@ -41,6 +41,7 @@
 package openvpn
 
 import (
+	"context"
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/rand"
@@ -528,11 +529,11 @@ func (s *OpenVpnService) generateServerConfigs(inbound *model.Inbound, preserveL
 	// used to delete it whole, taking the operator's server configs with it.
 	manifest.PrepareDir("/etc/openvpn", "openvpn")
 	manifest.PrepareDir(dir, "openvpn")
-	os.MkdirAll(dir, 0755)
+	_ = os.MkdirAll(dir, 0o755) // manifest.PrepareDir owns reporting a failed mkdir
 	manifest.PrepareDir("/var/run/openvpn", "openvpn")
-	os.MkdirAll("/var/run/openvpn", 0755)
+	_ = os.MkdirAll("/var/run/openvpn", 0o755)
 	manifest.PrepareDir("/etc/openvpn/server", "openvpn")
-	os.MkdirAll("/etc/openvpn/server", 0755)
+	os.MkdirAll("/etc/openvpn/server", 0o755)
 
 	// Path to the running panel binary, used as OpenVPN's auth/connect/disconnect
 	// hook. Resolved at runtime — the install location varies by distro
@@ -582,7 +583,7 @@ func (s *OpenVpnService) writeClientConfigDir(inbound *model.Inbound, settings *
 	ccdDir := fmt.Sprintf("%s/ccd-%s", s.configDir(inbound.Id), proto)
 	// Rebuild from scratch so deleted/renamed users don't leave stale pins.
 	os.RemoveAll(ccdDir)
-	if err := os.MkdirAll(ccdDir, 0755); err != nil {
+	if err := os.MkdirAll(ccdDir, 0o755); err != nil {
 		return err
 	}
 	netAddr, prefix := ovpnBlockFor(inbound, settings, proto)
@@ -599,7 +600,7 @@ func (s *OpenVpnService) writeClientConfigDir(inbound *model.Inbound, settings *
 	// ifconfig-push.
 	blocksDir := fmt.Sprintf("%s/blocks-%s", s.configDir(inbound.Id), proto)
 	os.RemoveAll(blocksDir)
-	if err := os.MkdirAll(blocksDir, 0755); err != nil {
+	if err := os.MkdirAll(blocksDir, 0o755); err != nil {
 		return err
 	}
 	// Fresh lease dir on every (re)gen — a config change restarts the daemon, dropping
@@ -612,7 +613,7 @@ func (s *OpenVpnService) writeClientConfigDir(inbound *model.Inbound, settings *
 	if !preserveLeases {
 		os.RemoveAll(leaseDir)
 	}
-	_ = os.MkdirAll(leaseDir, 0755)
+	_ = os.MkdirAll(leaseDir, 0o755)
 
 	// Publish the User Limit Strategy for the connect hook: "reject" refuses an extra
 	// device; "accept" evicts the account's oldest. One file per proto (udp/tcp share it).
@@ -851,7 +852,7 @@ func (s *OpenVpnService) writeCertFiles(inbound *model.Inbound) error {
 	}
 
 	dir := s.configDir(inbound.Id)
-	os.MkdirAll(dir, 0755)
+	os.MkdirAll(dir, 0o755)
 
 	if settings.CaCert != "" {
 		if err := s.writeFile(dir+"/ca.crt", settings.CaCert); err != nil {
@@ -859,7 +860,7 @@ func (s *OpenVpnService) writeCertFiles(inbound *model.Inbound) error {
 		}
 	}
 	if settings.CaKey != "" {
-		if err := s.writeFileMode(dir+"/ca.key", settings.CaKey, 0600); err != nil {
+		if err := s.writeFileMode(dir+"/ca.key", settings.CaKey, 0o600); err != nil {
 			return err
 		}
 	}
@@ -869,12 +870,12 @@ func (s *OpenVpnService) writeCertFiles(inbound *model.Inbound) error {
 		}
 	}
 	if settings.ServerKey != "" {
-		if err := s.writeFileMode(dir+"/server.key", settings.ServerKey, 0600); err != nil {
+		if err := s.writeFileMode(dir+"/server.key", settings.ServerKey, 0o600); err != nil {
 			return err
 		}
 	}
 	if settings.TlsCrypt != "" {
-		if err := s.writeFileMode(dir+"/tc.key", settings.TlsCrypt, 0600); err != nil {
+		if err := s.writeFileMode(dir+"/tc.key", settings.TlsCrypt, 0o600); err != nil {
 			return err
 		}
 	}
@@ -1260,18 +1261,23 @@ func (s *OpenVpnService) KillClient(inboundId int, username string) {
 
 // killClientViaMgmt sends a kill command to the OpenVPN management interface.
 func (s *OpenVpnService) killClientViaMgmt(sockPath, username string) {
-	conn, err := net.DialTimeout("unix", sockPath, 2*time.Second)
+	// Best-effort kill of one client through the management socket: every step
+	// below tolerates failure (the socket may be gone mid-kill), so errors are
+	// deliberately discarded rather than acted on.
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+	conn, err := (&net.Dialer{Timeout: 2 * time.Second}).DialContext(ctx, "unix", sockPath)
 	if err != nil {
 		return
 	}
 	defer conn.Close()
-	conn.SetDeadline(time.Now().Add(3 * time.Second))
+	_ = conn.SetDeadline(time.Now().Add(3 * time.Second))
 	// Read the greeting
 	buf := make([]byte, 1024)
-	conn.Read(buf)
+	_, _ = conn.Read(buf)
 	// Send kill command
-	fmt.Fprintf(conn, "kill %s\n", username)
-	conn.Read(buf)
+	_, _ = fmt.Fprintf(conn, "kill %s\n", username)
+	_, _ = conn.Read(buf)
 }
 
 // KillDisabledSessions kills active OpenVPN sessions for clients that are disabled.
@@ -1358,12 +1364,12 @@ func (s *OpenVpnService) getServerIP() string {
 }
 
 func (s *OpenVpnService) writeFile(path, content string) error {
-	return s.writeFileMode(path, content, 0644)
+	return s.writeFileMode(path, content, 0o644)
 }
 
 func (s *OpenVpnService) writeFileMode(path, content string, mode os.FileMode) error {
 	dir := filepath.Dir(path)
-	if err := os.MkdirAll(dir, 0755); err != nil {
+	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return fmt.Errorf("failed to create directory %s: %w", dir, err)
 	}
 	if err := os.WriteFile(path, []byte(content), mode); err != nil {

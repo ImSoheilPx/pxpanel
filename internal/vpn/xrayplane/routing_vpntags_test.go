@@ -26,10 +26,14 @@ func vpnTagConfig(t *testing.T, rules []map[string]any) *xray.Config {
 	cfg.InboundConfigs = []xray.InboundConfig{{Tag: "vless-native", Protocol: "vless"}}
 	inbounds := []*model.Inbound{
 		{Id: 1, Protocol: defaults.ProtoL2TP, Tag: "l2tp-a", Enable: true, Settings: `{"clients":[]}`},
-		{Id: 2, Protocol: defaults.ProtoSSH, Tag: "ssh-a", Enable: true,
-			Settings: `{"clients":[{"id":"u","password":"p","email":"ssh@x","enable":true}]}`},
-		{Id: 3, Protocol: defaults.ProtoMTProto, Tag: "mt-a", Enable: true,
-			Settings: `{"clients":[{"email":"mt@x","secret":"s"}]}`},
+		{
+			Id: 2, Protocol: defaults.ProtoSSH, Tag: "ssh-a", Enable: true,
+			Settings: `{"clients":[{"id":"u","password":"p","email":"ssh@x","enable":true}]}`,
+		},
+		{
+			Id: 3, Protocol: defaults.ProtoMTProto, Tag: "mt-a", Enable: true,
+			Settings: `{"clients":[{"email":"mt@x","secret":"s"}]}`,
+		},
 	}
 	InjectPairedInbounds(cfg, inbounds)
 	return cfg

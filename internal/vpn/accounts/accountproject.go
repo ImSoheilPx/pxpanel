@@ -555,7 +555,7 @@ func (s *AccountService) membershipEnabledFor(tx *gorm.DB, accountId, inboundId 
 	var membership model.AccountInbound
 	err := db.Where("account_id = ? AND inbound_id = ?", accountId, inboundId).
 		First(&membership).Error
-	if err == gorm.ErrRecordNotFound {
+	if errors.Is(err, gorm.ErrRecordNotFound) {
 		// No membership row yet: the sync that is creating it is the one asking, so
 		// the entry it carries IS the account's intent. Mirror it as normal.
 		return true
@@ -1056,7 +1056,7 @@ func (s *AccountService) SetMembershipEnable(email string, inboundId int, enable
 		var membership model.AccountInbound
 		if err := tx.Where("account_id = ? AND inbound_id = ?", account.Id, inboundId).
 			First(&membership).Error; err != nil {
-			if err == gorm.ErrRecordNotFound {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
 				return common.NewErrorf("account %q is not on inbound %d", email, inboundId)
 			}
 			return err
@@ -1375,7 +1375,7 @@ func (s *AccountService) RenameAccount(oldEmail, newEmail string) ([]int, error)
 		var account model.Account
 		err := tx.Where("LOWER(TRIM(email)) = ?", oldKey).First(&account).Error
 		if err != nil {
-			if err == gorm.ErrRecordNotFound {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
 				// Nothing mirrored under the old key. The ordinary caller's
 				// SyncInboundAccounts will create the account under the new one.
 				return nil
@@ -1486,7 +1486,7 @@ func (s *AccountService) DropMembership(tx *gorm.DB, inboundId int, email string
 
 	var account model.Account
 	if err := tx.Where("LOWER(TRIM(email)) = ?", key).First(&account).Error; err != nil {
-		if err == gorm.ErrRecordNotFound {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil // nothing mirrored for this email
 		}
 		return err

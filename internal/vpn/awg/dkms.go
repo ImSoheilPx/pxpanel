@@ -42,8 +42,10 @@ func ensureAmneziawg() pkgmgr.ProvisionStep {
 	// installed, and AmneziaWG came back missing after the reboot.
 	missing := awgKernelsMissingModule()
 	if len(missing) == 0 && pkgmgr.ModuleAvailable(amneziawgModule) {
-		return pkgmgr.ProvisionStep{Name: name, OK: true,
-			Msg: "amneziawg module already built for every installed kernel"}
+		return pkgmgr.ProvisionStep{
+			Name: name, OK: true,
+			Msg: "amneziawg module already built for every installed kernel",
+		}
 	}
 
 	// Refuse up front on hosts where the module provably cannot build, instead of pulling
@@ -56,8 +58,10 @@ func ensureAmneziawg() pkgmgr.ProvisionStep {
 	}
 
 	if !pkgmgr.PackagesSupported() {
-		return pkgmgr.ProvisionStep{Name: name, OK: true, Warn: true,
-			Msg: "no supported package manager , install dkms, kernel headers and a C toolchain, then re-run setup"}
+		return pkgmgr.ProvisionStep{
+			Name: name, OK: true, Warn: true,
+			Msg: "no supported package manager , install dkms, kernel headers and a C toolchain, then re-run setup",
+		}
 	}
 	pmName := pkgmgr.PackageManagerName()
 
@@ -180,9 +184,11 @@ func ensureAmneziawg() pkgmgr.ProvisionStep {
 	}
 
 	// Persist so the module autoloads at boot.
-	_ = os.WriteFile("/etc/modules-load.d/amneziawg.conf", []byte("amneziawg\n"), 0644)
-	return pkgmgr.ProvisionStep{Name: name + " via " + pmName, OK: true,
-		Msg: "amneziawg module built + loaded (DKMS " + awgsrc.Version + ")" + extra, Log: log.String()}
+	_ = os.WriteFile("/etc/modules-load.d/amneziawg.conf", []byte("amneziawg\n"), 0o644)
+	return pkgmgr.ProvisionStep{
+		Name: name + " via " + pmName, OK: true,
+		Msg: "amneziawg module built + loaded (DKMS " + awgsrc.Version + ")" + extra, Log: log.String(),
+	}
 }
 
 // kernelsWithHeaders returns every installed kernel version under /lib/modules that has a
@@ -340,11 +346,15 @@ func RemoveAmneziawgModule() pkgmgr.ProvisionStep {
 	if err != nil {
 		// Already deregistered, or built by a different version string. Not a
 		// failure: the source tree is gone and nothing will rebuild it.
-		return pkgmgr.ProvisionStep{Name: name, OK: true, Warn: true,
-			Msg: "dkms remove reported an error; source tree removed", Log: log.String()}
+		return pkgmgr.ProvisionStep{
+			Name: name, OK: true, Warn: true,
+			Msg: "dkms remove reported an error; source tree removed", Log: log.String(),
+		}
 	}
-	return pkgmgr.ProvisionStep{Name: name, OK: true,
-		Msg: "deregistered from DKMS (stays loaded until reboot)", Log: log.String()}
+	return pkgmgr.ProvisionStep{
+		Name: name, OK: true,
+		Msg: "deregistered from DKMS (stays loaded until reboot)", Log: log.String(),
+	}
 }
 
 // awgModuleBuiltFor reports whether a DKMS-installed amneziawg module exists for kver.

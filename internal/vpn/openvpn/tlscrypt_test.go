@@ -19,8 +19,10 @@ func ovpnInboundFor(settings string) *model.Inbound {
 	}
 }
 
-const ovpnTestCA = "-----BEGIN CERTIFICATE-----\nMIIB\n-----END CERTIFICATE-----"
-const ovpnTestTC = "-----BEGIN OpenVPN Static key V1-----\nabcdef\n-----END OpenVPN Static key V1-----"
+const (
+	ovpnTestCA = "-----BEGIN CERTIFICATE-----\nMIIB\n-----END CERTIFICATE-----"
+	ovpnTestTC = "-----BEGIN OpenVPN Static key V1-----\nabcdef\n-----END OpenVPN Static key V1-----"
+)
 
 func TestOpenVpnClientConfigOmitsTlsCryptWhenDisabled(t *testing.T) {
 	s := &OpenVpnService{}

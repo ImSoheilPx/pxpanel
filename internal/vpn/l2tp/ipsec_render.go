@@ -148,7 +148,7 @@ func (s *L2tpService) GenerateIPsecConfig(inbounds []*model.Inbound) error {
 
 	// Write /etc/ipsec.secrets (mode 0600 for PSK confidentiality)
 	manifest.PrepareHostFile("/etc/ipsec.secrets", "l2tp")
-	if err := s.writeFileMode("/etc/ipsec.secrets", buildIpsecSecrets(all, perListen), 0600); err != nil {
+	if err := s.writeFileMode("/etc/ipsec.secrets", buildIpsecSecrets(all, perListen), 0o600); err != nil {
 		return err
 	}
 

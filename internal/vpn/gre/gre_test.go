@@ -347,12 +347,18 @@ func TestGreNftViewBlocksDisabledAccountsAndScopesAntiSpoofing(t *testing.T) {
 		UserLimit: intPtr(2),
 		IpRanges:  []string{"10.9.4.2-10.9.4.254"},
 		Clients: []greClient{
-			{Email: "static@t", Enable: true, Slot: intPtr(0),
-				Peers: []grePeer{{PeerIp: "203.0.113.7"}}},
-			{Email: "dynamic@t", Enable: true, Slot: intPtr(1),
-				Peers: []grePeer{{PeerIp: ""}}},
-			{Email: "off@t", Enable: false, Slot: intPtr(2),
-				Peers: []grePeer{{PeerIp: "203.0.113.9"}}},
+			{
+				Email: "static@t", Enable: true, Slot: intPtr(0),
+				Peers: []grePeer{{PeerIp: "203.0.113.7"}},
+			},
+			{
+				Email: "dynamic@t", Enable: true, Slot: intPtr(1),
+				Peers: []grePeer{{PeerIp: ""}},
+			},
+			{
+				Email: "off@t", Enable: false, Slot: intPtr(2),
+				Peers: []grePeer{{PeerIp: "203.0.113.9"}},
+			},
 		},
 	}
 	ib := buildGreInbound(t, 4, "{}")
@@ -404,8 +410,10 @@ func TestGreNftViewAlwaysCoversTheCatchAll(t *testing.T) {
 	settings := &greSettings{
 		UserLimit: intPtr(1),
 		IpRanges:  []string{"10.9.5.2-10.9.5.254"},
-		Clients: []greClient{{Email: "only@t", Enable: true, Slot: intPtr(0),
-			Peers: []grePeer{{PeerIp: "203.0.113.7"}}}},
+		Clients: []greClient{{
+			Email: "only@t", Enable: true, Slot: intPtr(0),
+			Peers: []grePeer{{PeerIp: "203.0.113.7"}},
+		}},
 	}
 	ib := buildGreInbound(t, 5, "{}")
 	ib.Listen = "198.51.100.2"
@@ -996,8 +1004,10 @@ func TestIpsecOnlyGateIsScopedPerPeer(t *testing.T) {
 	ipsecOnly := greSettings{
 		IpsecEnable: true, AllowRaw: false, UserLimit: intPtr(1),
 		IpRanges: []string{"10.9.4.2-10.9.4.254"},
-		Clients: []greClient{{Email: "s@t", Enable: true, Slot: intPtr(0),
-			Peers: []grePeer{{PeerIp: "203.0.113.7"}}}},
+		Clients: []greClient{{
+			Email: "s@t", Enable: true, Slot: intPtr(0),
+			Peers: []grePeer{{PeerIp: "203.0.113.7"}},
+		}},
 	}
 	rawOk := greSettings{
 		IpsecEnable: false, AllowRaw: true, UserLimit: intPtr(1),

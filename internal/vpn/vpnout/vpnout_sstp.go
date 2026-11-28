@@ -290,7 +290,7 @@ func (d *sstpOutDriver) Up(cfg VpnOutboundConfig) (string, error) {
 		_ = exec.Command("modprobe", mod).Run()
 	}
 
-	if err := os.MkdirAll(sstpOutRunDir, 0755); err != nil {
+	if err := os.MkdirAll(sstpOutRunDir, 0o755); err != nil {
 		return "", fmt.Errorf("cannot create %s, which sstpc needs for its plugin socket: %w", sstpOutRunDir, err)
 	}
 	// A socket left behind by an sstpc that was killed rather than stopped would fail
@@ -568,11 +568,11 @@ func sstpOutHostOf(server string) string {
 
 // writeCaFile lays the operator's CA PEM down for sstpc to verify the server against.
 func (d *sstpOutDriver) writeCaFile(name, pem string) (string, error) {
-	if err := os.MkdirAll(sstpOutDir(name), 0700); err != nil {
+	if err := os.MkdirAll(sstpOutDir(name), 0o700); err != nil {
 		return "", err
 	}
 	body := strings.TrimSpace(pem) + "\n"
-	if err := os.WriteFile(sstpOutCaFile(name), []byte(body), 0644); err != nil {
+	if err := os.WriteFile(sstpOutCaFile(name), []byte(body), 0o644); err != nil {
 		return "", err
 	}
 	return sstpOutCaFile(name), nil
@@ -679,11 +679,11 @@ func (d *sstpOutDriver) writeOptions(name, iface, plugin string, s *sstpOutSetti
 	// /etc/ppp/options has turned it on, but a hook that never runs cannot act on it.
 	b.WriteString("ip-up-script /bin/true\nip-down-script /bin/true\n")
 
-	if err := os.MkdirAll("/etc/ppp", 0755); err != nil {
+	if err := os.MkdirAll("/etc/ppp", 0o755); err != nil {
 		return err
 	}
 	// 0600: the file holds the account password.
-	return os.WriteFile(sstpOutOptsFile(name), []byte(b.String()), 0600)
+	return os.WriteFile(sstpOutOptsFile(name), []byte(b.String()), 0o600)
 }
 
 // ---------------------------------------------------------------------------
