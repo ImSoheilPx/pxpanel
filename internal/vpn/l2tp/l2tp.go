@@ -517,7 +517,7 @@ func (s *L2tpService) RestartServices() error {
 
 	// xl2tpd -D runs in the foreground reading /etc/xl2tpd/xl2tpd.conf; the panel
 	// supervises it and reaps its pppd children.
-	os.MkdirAll("/var/run/xl2tpd", 0o755)
+	_ = os.MkdirAll("/var/run/xl2tpd", 0o755)
 	if err := procmgr.GetProcManager().Start("xl2tpd", procmgr.DaemonBin("xl2tpd"), []string{"-D"}, procmgr.PppdEnv(), ""); err != nil {
 		log.Warning("L2TP: failed to start xl2tpd:", err)
 	}

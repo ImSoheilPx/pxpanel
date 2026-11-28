@@ -39,6 +39,13 @@ linters:
           - staticcheck
         text: "ST1005:"
 
+# Report every finding: the default caps (3 per issue class) made CI runs hide
+# all but three occurrences of each issue, which turned lint fixes into a
+# multi-push whack-a-mole.
+issues:
+  max-issues-per-linter: 0
+  max-same-issues: 0
+
 formatters:
   enable:
     - gofumpt

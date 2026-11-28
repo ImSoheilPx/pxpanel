@@ -15,7 +15,7 @@ import (
 	"github.com/ImSoheilPx/pxpanel/internal/vpn/accounts"
 	"github.com/ImSoheilPx/pxpanel/internal/vpn/defaults"
 	"github.com/ImSoheilPx/pxpanel/internal/vpn/log"
-	"github.com/ImSoheilPx/pxpanel/internal/vpn/range"
+	vpnrange "github.com/ImSoheilPx/pxpanel/internal/vpn/range"
 	"github.com/ImSoheilPx/pxpanel/internal/xray"
 )
 

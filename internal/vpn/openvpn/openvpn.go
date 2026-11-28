@@ -852,7 +852,7 @@ func (s *OpenVpnService) writeCertFiles(inbound *model.Inbound) error {
 	}
 
 	dir := s.configDir(inbound.Id)
-	os.MkdirAll(dir, 0o755)
+	_ = os.MkdirAll(dir, 0o755)
 
 	if settings.CaCert != "" {
 		if err := s.writeFile(dir+"/ca.crt", settings.CaCert); err != nil {

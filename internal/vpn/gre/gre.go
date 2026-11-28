@@ -1367,9 +1367,9 @@ func (s *GreService) publishDynamic(dynamic map[string]greDynamicPeer) {
 // protocols. ip_gre is loaded for the netdevs and fou before any encap device is created,
 // because a FOU LinkAdd against an unloaded module fails EINVAL rather than degrading.
 func (s *GreService) SetupRouting() error {
-	s.runCmd("sysctl", "-w", "net.ipv4.ip_forward=1")
-	s.runCmd("modprobe", greModule)
-	s.runCmd("modprobe", greFouModule)
+	_ = s.runCmd("sysctl", "-w", "net.ipv4.ip_forward=1")
+	_ = s.runCmd("modprobe", greModule)
+	_ = s.runCmd("modprobe", greFouModule)
 
 	nftables.EnsureVpnPolicyRoute(s.runCmd)
 

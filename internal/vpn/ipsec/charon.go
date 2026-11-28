@@ -13,6 +13,7 @@ package ipsec
 // seams listed in the package comment.)
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -285,7 +286,7 @@ func reloadCharon() error {
 	var out []byte
 	var err error
 	for attempt := 0; attempt < 6; attempt++ {
-		out, err = exec.Command(swanctlBin(), "--load-all").CombinedOutput()
+		out, err = exec.CommandContext(context.Background(), swanctlBin(), "--load-all").CombinedOutput()
 		if err == nil {
 			return nil
 		}

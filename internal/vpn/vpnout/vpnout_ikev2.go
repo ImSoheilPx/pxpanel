@@ -1,6 +1,7 @@
 package vpnout
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"hash/fnv"
@@ -380,7 +381,7 @@ func (d *ikev2OutDriver) teardown(name, iface string) {
 		// --timeout, because a bare --terminate WAITS for the delete exchange to complete
 		// and an unreachable gateway makes charon retransmit for the best part of a
 		// minute. Down runs on panel shutdown, once per tunnel, in series.
-		_ = exec.Command(swanctlBin(), "--terminate", "--ike", conn, "--timeout", "5").Run()
+		_ = exec.CommandContext(context.Background(), swanctlBin(), "--terminate", "--ike", conn, "--timeout", "5").Run()
 	}
 	hadConf := false
 	if _, err := os.Stat(ikev2OutConnFile(name)); err == nil {
@@ -543,7 +544,7 @@ func (d *ikev2OutDriver) ensureXfrmLink(iface string, ifID uint32, s *ikev2OutSe
 
 	// Built into most target kernels, a module on some. Best effort, exactly like the
 	// esp4/xfrm_user preload the inbound side does in SetupRouting.
-	_ = exec.Command("modprobe", "xfrm_interface").Run()
+	_ = exec.CommandContext(context.Background(), "modprobe", "xfrm_interface").Run()
 
 	la := netlink.NewLinkAttrs()
 	la.Name = iface
@@ -581,7 +582,7 @@ func (d *ikev2OutDriver) ensureXfrmLink(iface string, ifID uint32, s *ikev2OutSe
 // protocol. This driver used to carry its own copy back when the framework relaxed only
 // the device.
 func ikev2OutTuneIface(iface string) {
-	_ = exec.Command("sysctl", "-w", "net.ipv4.conf."+iface+".disable_policy=1").Run()
+	_ = exec.CommandContext(context.Background(), "sysctl", "-w", "net.ipv4.conf."+iface+".disable_policy=1").Run()
 }
 
 // ikev2OutWanIndex returns the interface index of the default route, or 0.
@@ -1014,7 +1015,7 @@ func ipsecOutEncapInstalled(listing string) bool {
 // side). This runs inside the panel's save handler, so a blocking listing would stall an
 // HTTP request behind an unrelated client's login.
 func ikev2OutSAState(conn string) (bool, string, bool) {
-	out, err := exec.Command(swanctlBin(), "--list-sas", "--noblock", "--ike", conn).CombinedOutput()
+	out, err := exec.CommandContext(context.Background(), swanctlBin(), "--list-sas", "--noblock", "--ike", conn).CombinedOutput()
 	if err != nil {
 		return false, "", false
 	}

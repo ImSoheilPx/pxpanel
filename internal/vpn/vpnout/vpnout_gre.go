@@ -11,10 +11,11 @@ import (
 	"sync"
 	"time"
 
-	logger "github.com/ImSoheilPx/pxpanel/internal/vpn/log"
-	"github.com/ImSoheilPx/pxpanel/internal/vpn/procmgr"
 	"github.com/vishvananda/netlink"
 	"golang.org/x/sys/unix"
+
+	logger "github.com/ImSoheilPx/pxpanel/internal/vpn/log"
+	"github.com/ImSoheilPx/pxpanel/internal/vpn/procmgr"
 
 	"github.com/goccy/go-json"
 )
@@ -962,7 +963,7 @@ func greOutRemoveIpsec(tag string) {
 		return
 	}
 	_ = os.Remove(path)
-	_ = exec.Command(swanctlBin(), "--terminate", "--ike", greOutIpsecConn(tag)).Run()
+	_ = exec.CommandContext(context.Background(), swanctlBin(), "--terminate", "--ike", greOutIpsecConn(tag)).Run()
 	// Reload rather than syncCharon, for the ordering reason above and because Down is called
 	// from three places (delete, save-disabled, shutdown) that persist at different points, so
 	// "does anything still need charon" is not a question this can ask reliably. The daemon is
@@ -990,7 +991,7 @@ func greOutIpsecUp(tag string) (bool, string) {
 	// against the panel's own RADIUS server (ikev2.go documents the deadlock from the other
 	// side). This runs inside the panel's status handler, so a blocking listing would stall an
 	// HTTP request behind an unrelated client's login.
-	out, err := exec.Command(swanctlBin(), "--list-sas", "--noblock").CombinedOutput()
+	out, err := exec.CommandContext(context.Background(), swanctlBin(), "--list-sas", "--noblock").CombinedOutput()
 	if err != nil {
 		return false, "cannot query charon"
 	}
@@ -1045,7 +1046,7 @@ const greOutIpsecEncapTimeout = 15 * time.Second
 // second private copy of that knowledge is a second thing to get wrong when the bundled
 // strongSwan changes its format string.
 func greOutIpsecEncapState(conn string) (installed, encap bool) {
-	out, err := exec.Command(swanctlBin(), "--list-sas", "--noblock", "--ike", conn).CombinedOutput()
+	out, err := exec.CommandContext(context.Background(), swanctlBin(), "--list-sas", "--noblock", "--ike", conn).CombinedOutput()
 	if err != nil {
 		return false, false
 	}

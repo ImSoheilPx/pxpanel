@@ -10,6 +10,7 @@ package vpnout
 // as one family.
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"net"
@@ -66,7 +67,7 @@ func (greOutHost) FouAvailable() bool { return moduleAvailable(greFouModule) }
 
 // runCmd runs one command, logging combined output on failure (vpn-ui gre.go runCmd).
 func (greOutHost) runCmd(name string, args ...string) error {
-	cmd := exec.Command(name, args...)
+	cmd := exec.CommandContext(context.Background(), name, args...)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		vpnlog.Debugf("GRE: cmd '%s %s' failed: %s %v", name, strings.Join(args, " "), string(output), err)
@@ -221,7 +222,7 @@ type ovpnOutHost struct{}
 
 // runCmd runs one command, logging combined output on failure (vpn-ui openvpn.go runCmd).
 func (ovpnOutHost) runCmd(name string, args ...string) error {
-	cmd := exec.Command(name, args...)
+	cmd := exec.CommandContext(context.Background(), name, args...)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		vpnlog.Debugf("OpenVPN: cmd '%s %s' failed: %s %v", name, strings.Join(args, " "), string(output), err)

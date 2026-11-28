@@ -1,6 +1,7 @@
 package vpnout
 
 import (
+	"context"
 	"fmt"
 	"hash/fnv"
 	"net"
@@ -12,9 +13,10 @@ import (
 	"sync"
 	"time"
 
-	logger "github.com/ImSoheilPx/pxpanel/internal/vpn/log"
 	"github.com/vishvananda/netlink"
 	"golang.org/x/sys/unix"
+
+	logger "github.com/ImSoheilPx/pxpanel/internal/vpn/log"
 
 	"github.com/goccy/go-json"
 )
@@ -325,7 +327,7 @@ var (
 
 func ovpnOutCompressionSupport(bin string) (lzo, lz4 bool) {
 	ovpnOutCompProbe.Do(func() {
-		out, _ := exec.Command(bin, "--version").CombinedOutput()
+		out, _ := exec.CommandContext(context.Background(), bin, "--version").CombinedOutput()
 		// --version exits non-zero by design, so the error is deliberately ignored and only
 		// the output is read. Same shape as OpenVpnService.hasDCO.
 		ovpnOutHasLzo = strings.Contains(string(out), "[LZO]")

@@ -64,6 +64,7 @@
 package wgc
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"math/bits"
@@ -1267,7 +1268,7 @@ func (s *WgcService) pruneFirstSeen(seen map[string]bool) {
 }
 
 func (s *WgcService) runCmd(name string, args ...string) error {
-	cmd := exec.Command(name, args...)
+	cmd := exec.CommandContext(context.Background(), name, args...)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		logger.Debugf("WireGuard: cmd '%s %s' failed: %s %v", name, strings.Join(args, " "), string(output), err)

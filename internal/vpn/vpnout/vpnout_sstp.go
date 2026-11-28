@@ -1,6 +1,7 @@
 package vpnout
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"net"
@@ -287,7 +288,7 @@ func (d *sstpOutDriver) Up(cfg VpnOutboundConfig) (string, error) {
 	// a live session down.
 	migrateFromSystemd()
 	for _, mod := range []string{"ppp_generic", "ppp_async", "ppp_mppe"} {
-		_ = exec.Command("modprobe", mod).Run()
+		_ = exec.CommandContext(context.Background(), "modprobe", mod).Run()
 	}
 
 	if err := os.MkdirAll(sstpOutRunDir, 0o755); err != nil {
