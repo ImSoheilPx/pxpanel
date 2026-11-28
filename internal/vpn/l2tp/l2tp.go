@@ -389,13 +389,13 @@ func (s *L2tpService) getDisabledEmails() map[string]bool {
 // SetupAllTproxy sets up kernel modules, ip rules, and nftables rules for TPROXY.
 func (s *L2tpService) SetupAllTproxy() error {
 	// Enable IP forwarding
-	s.runCmd("sysctl", "-w", "net.ipv4.ip_forward=1")
+	_ = s.runCmd("sysctl", "-w", "net.ipv4.ip_forward=1")
 
 	// Load kernel modules
-	s.runCmd("modprobe", "l2tp_ppp")
-	s.runCmd("modprobe", "ppp_generic")
-	s.runCmd("modprobe", "af_key")
-	s.runCmd("modprobe", "nf_tproxy_ipv4")
+	_ = s.runCmd("modprobe", "l2tp_ppp")
+	_ = s.runCmd("modprobe", "ppp_generic")
+	_ = s.runCmd("modprobe", "af_key")
+	_ = s.runCmd("modprobe", "nf_tproxy_ipv4")
 
 	// Set up the shared ip rule and route table (idempotent, and it collapses the
 	// duplicates the old per-protocol guard piled up).

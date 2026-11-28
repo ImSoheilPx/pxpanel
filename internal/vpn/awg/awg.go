@@ -687,8 +687,8 @@ func (s *AwgService) removeStaleLinks(keep map[string]bool) {
 // SetupRouting shares the fwmark policy route + nftables regeneration with the other VPN
 // protocols; best-effort modprobe of the amneziawg module.
 func (s *AwgService) SetupRouting() error {
-	s.runCmd("sysctl", "-w", "net.ipv4.ip_forward=1")
-	s.runCmd("modprobe", amneziawgModule)
+	_ = s.runCmd("sysctl", "-w", "net.ipv4.ip_forward=1")
+	_ = s.runCmd("modprobe", amneziawgModule)
 
 	nftables.EnsureVpnPolicyRoute(s.runCmd)
 	return s.nftService.ApplyNftRules(nftables.GatherRulesInput())

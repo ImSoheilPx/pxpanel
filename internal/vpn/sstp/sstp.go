@@ -617,10 +617,10 @@ func (s *SstpService) steeringSource() nftables.SteeringSource {
 // nftables regeneration with the other VPN protocols. SSTP is PPP-family, so it
 // needs ppp_generic (already provisioned for l2tp/pptp).
 func (s *SstpService) SetupRouting() error {
-	s.runCmd("sysctl", "-w", "net.ipv4.ip_forward=1")
+	_ = s.runCmd("sysctl", "-w", "net.ipv4.ip_forward=1")
 
-	s.runCmd("modprobe", "ppp_generic")
-	s.runCmd("modprobe", "nf_tproxy_ipv4")
+	_ = s.runCmd("modprobe", "ppp_generic")
+	_ = s.runCmd("modprobe", "nf_tproxy_ipv4")
 
 	nftables.EnsureVpnPolicyRoute(s.runCmd)
 

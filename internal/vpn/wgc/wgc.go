@@ -675,8 +675,8 @@ func (s *WgcService) removeStaleLinks(keep map[string]bool) {
 // Xray. Shares the fwmark policy route + nftables regeneration with the other VPN
 // protocols; loads the wireguard module (best-effort, autoloads on interface create anyway).
 func (s *WgcService) SetupRouting() error {
-	s.runCmd("sysctl", "-w", "net.ipv4.ip_forward=1")
-	s.runCmd("modprobe", wgKernelModule)
+	_ = s.runCmd("sysctl", "-w", "net.ipv4.ip_forward=1")
+	_ = s.runCmd("modprobe", wgKernelModule)
 
 	nftables.EnsureVpnPolicyRoute(s.runCmd)
 	return s.nftService.ApplyNftRules(nftables.GatherRulesInput())

@@ -898,11 +898,11 @@ func (s *OpenVpnService) writeCertFiles(inbound *model.Inbound) error {
 // rules).
 func (s *OpenVpnService) SetupRouting() error {
 	// Enable IP forwarding
-	s.runCmd("sysctl", "-w", "net.ipv4.ip_forward=1")
+	_ = s.runCmd("sysctl", "-w", "net.ipv4.ip_forward=1")
 
 	// Kernel modules for the tun device + TPROXY redirect.
-	s.runCmd("modprobe", "tun")
-	s.runCmd("modprobe", "nf_tproxy_ipv4")
+	_ = s.runCmd("modprobe", "tun")
+	_ = s.runCmd("modprobe", "nf_tproxy_ipv4")
 
 	// Deliver fwmark-1 packets locally so TPROXY can hand them to the dokodemo
 	// socket (shared table 100 with L2TP/PPTP; add/replace are idempotent).

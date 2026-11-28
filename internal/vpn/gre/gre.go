@@ -1376,7 +1376,7 @@ func (s *GreService) SetupRouting() error {
 	// A GRE netdev is NOARP and the catch-all is fed by learned neighbour entries, so
 	// strict reverse-path filtering on it would drop perfectly good customer traffic.
 	for name := range s.currentIfaces() {
-		s.runCmd("sysctl", "-w", fmt.Sprintf("net.ipv4.conf.%s.rp_filter=0", name))
+		_ = s.runCmd("sysctl", "-w", fmt.Sprintf("net.ipv4.conf.%s.rp_filter=0", name))
 	}
 
 	if err := s.syncIpsec(); err != nil {

@@ -358,8 +358,8 @@ func (s *PptpService) SetupAllTproxy() error {
 	_ = s.runCmd("modprobe", "nf_conntrack_pptp")
 	_ = s.runCmd("modprobe", "ip_gre")
 	_ = s.runCmd("modprobe", "ppp_generic")
-	s.runCmd("modprobe", "ppp_mppe")
-	s.runCmd("modprobe", "nf_tproxy_ipv4")
+	_ = s.runCmd("modprobe", "ppp_mppe")
+	_ = s.runCmd("modprobe", "nf_tproxy_ipv4")
 
 	// Set up the shared ip rule and route table (idempotent, and it collapses the
 	// duplicates the old per-protocol guard piled up).
