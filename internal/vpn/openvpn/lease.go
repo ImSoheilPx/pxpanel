@@ -244,7 +244,7 @@ func Disconnect() {
 		_ = rfc2866.AcctSessionTime_Set(packet, rfc2866.AcctSessionTime(sessionTime))
 	}
 
-	_ = radius.Exchange(context.Background(), packet, "127.0.0.1:1813")
+	_, _ = radius.Exchange(context.Background(), packet, "127.0.0.1:1813")
 	os.Exit(0)
 }
 
